@@ -80,33 +80,9 @@ header h1{margin:0;font-size:28px;font-weight:800;letter-spacing:-0.02em}
 .thanksgiving-subtitle{ display:none; }
 .event-thanksgiving .thanksgiving-subtitle{ display:block; }
 
-.christmas-shimmer{ color: inherit; font-weight:800; }
-.event-christmas .christmas-shimmer{
-	display:inline-block;
-	background: linear-gradient(90deg, #c41e3a 0%, #228b22 25%, #c41e3a 50%, #228b22 75%, #c41e3a 100%);
-	background-size: 200% 100%;
-	-webkit-background-clip: text;
-	background-clip: text;
-	color: transparent;
-	animation: christmasShift 4s ease-in-out infinite;
-}
-
-@keyframes christmasShift{
-	0%{ background-position: 0% 50%; }
-	50%{ background-position: 100% 50%; }
-	100%{ background-position: 0% 50%; }
-}
-
-.christmas-snow{ display:none; position: fixed; top: -50px; pointer-events: none; z-index: 1; font-size: 28px; opacity: 0.8; animation: fallSnow 10s linear infinite; }
-.event-christmas .christmas-snow{ display:block; }
-
-.christmas-subtitle{ display:none; }
-.event-christmas .christmas-subtitle{ display:block !important; }
-
-#christmasShopItem{ display:none; }
-.event-christmas #christmasShopItem{ display:flex; }
-#christmasGiftItem{ display:none; }
-.event-christmas #christmasGiftItem{ display:flex; }
+/* Christmas content disabled */
+.christmas-shimmer{ color: inherit; font-weight:800; background:none; -webkit-background-clip: initial; background-clip: initial; animation:none; }
+.christmas-snow, .christmas-subtitle, #christmasShopItem, #christmasGiftItem{ display:none !important; }
 
 
 @keyframes fallSnow{

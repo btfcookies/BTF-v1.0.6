@@ -1097,8 +1097,6 @@ loadLeaderboard();
   \*********************/
 /***/ (() => {
 
-// Christmas Gift dynamic card removed per request. No injection.
-
 // Shop functionality
 // Guard: only run if shop page elements exist
 if (!document.getElementById('buyLuckPotion')) {
@@ -1117,8 +1115,6 @@ const BENNY_COST = 10000;
 const BENNY_DURATION = 5 * 60 * 1000; // 5 minutes
 const BLESSING_COST = 8000;
 const BLESSING_DURATION = 5 * 60 * 1000; // 5 minutes
-const CHRISTMAS_COST = 150000;
-const CHRISTMAS_DURATION = 5 * 60 * 1000; // 5 minutes
 const SLOT_MACHINE_COST = 1000000;
 const SLOT_MACHINE_BONUS = 5;
 
@@ -1129,8 +1125,6 @@ const buyBennyBtn = document.getElementById('buyBennyBoost');
 const bennyTimerEl = document.getElementById('bennyTimer');
 const buyBlessingBtn = document.getElementById('buyPumpkinBlessing');
 const blessingTimerEl = document.getElementById('blessingTimer');
-const buyChristmasBtn = document.getElementById('buyChristmasPotion');
-const christmasTimerEl = document.getElementById('christmasTimer');
 const buySlotMachineBtn = document.getElementById('buySlotMachine');
 const slotsPurchasedEl = document.getElementById('slotsPurchased');
 const buyThanksgivingPotion = document.getElementById('buyThanksgivingPotion');
@@ -1168,8 +1162,6 @@ function loadState() {
             window.state.bennyEndsAt = parsed.bennyEndsAt ?? 0;
             window.state.blessingActive = parsed.blessingActive ?? false;
             window.state.blessingEndsAt = parsed.blessingEndsAt ?? 0;
-            window.state.christmasActive = parsed.christmasActive ?? false;
-            window.state.christmasEndsAt = parsed.christmasEndsAt ?? 0;
             window.state.purchasedItems = parsed.purchasedItems ?? [];
             window.state.bonusInventorySlots = parsed.bonusInventorySlots ?? 0;
             window.state.inventory = parsed.inventory ?? (window.state.inventory || {});
@@ -1221,21 +1213,6 @@ function updateUI() {
             blessingTimerEl.style.display = 'inline';
         } else {
             blessingTimerEl.style.display = 'none';
-        }
-    }
-    
-    // Christmas UI
-    if(christmasTimerEl){
-        const chrActive = window.state.christmasActive && window.state.christmasEndsAt > Date.now();
-        if(buyChristmasBtn) buyChristmasBtn.disabled = window.state.coins < CHRISTMAS_COST || chrActive;
-        if(chrActive){
-            const remaining = Math.ceil((window.state.christmasEndsAt - Date.now())/1000);
-            const minutes = Math.floor(remaining/60);
-            const seconds = remaining%60;
-            christmasTimerEl.textContent = `${minutes}:${seconds.toString().padStart(2,'0')} remaining`;
-            christmasTimerEl.style.display = 'inline';
-        } else {
-            christmasTimerEl.style.display = 'none';
         }
     }
     
@@ -1486,52 +1463,6 @@ if(buyBlessingBtn){
     });
 }
 
-// Buy Christmas Spirit Potion - TEMPORARILY DISABLED
-if(buyChristmasBtn){
-    buyChristmasBtn.addEventListener('click', ()=>{
-        if(typeof showAlert === 'function'){
-            showAlert('This item is temporarily unavailable!');
-        } else {
-            alert('This item is temporarily unavailable!');
-        }
-        return;
-        
-        /* DISABLED CODE
-        if(window.state.coins >= CHRISTMAS_COST){
-            window.state.coins -= CHRISTMAS_COST;
-            window.state.christmasActive = true;
-            window.state.christmasEndsAt = Date.now() + CHRISTMAS_DURATION;
-            
-            // Properly manage luck stacks with the potion system
-            if (window.state.potionActive && window.state.potionEndsAt > Date.now()) {
-                // Already active: add 1 stack (max 100), reset timer
-                window.state.luckStacks = Math.min((window.state.luckStacks || 0) + 1, 100);
-                window.state.potionEndsAt = Date.now() + CHRISTMAS_DURATION;
-            } else {
-                // Not active or expired: start new effect with 1 stack
-                window.state.potionActive = true;
-                window.state.luckStacks = 1;
-                window.state.potionEndsAt = Date.now() + CHRISTMAS_DURATION;
-            }
-            
-            if(typeof window.saveState === 'function') window.saveState();
-            updateUI();
-            if(typeof showAlert === 'function'){
-                showAlert('🎄 Christmas Spirit Potion activated! +2x luck for 5 minutes!');
-            } else {
-                alert('🎄 Christmas Spirit Potion activated! +2x luck for 5 minutes!');
-            }
-        } else {
-            if(typeof showAlert === 'function'){
-                showAlert('Not enough coins!');
-            } else {
-                alert('Not enough coins!');
-            }
-        }
-        */
-    });
-}
-
 // Buy Slot Machine
 if(buySlotMachineBtn){
     buySlotMachineBtn.addEventListener('click', ()=>{
@@ -1576,83 +1507,6 @@ if(buyThanksgivingPotion){
         }
     });
 } 
-
-// Christmas Gift Claim handler
-const claimChristmasGiftBtn = document.getElementById('claimChristmasGift');
-if(claimChristmasGiftBtn){
-    // Disable button immediately if already claimed (on page load)
-    (function(){
-        const GIFT_FLAG_KEY = 'btf_gift_christmas2025_claimed';
-        const alreadyClaimed = localStorage.getItem(GIFT_FLAG_KEY) === '1' || (window.state && window.state.gifts && window.state.gifts.christmas2025);
-        if(alreadyClaimed){
-            claimChristmasGiftBtn.disabled = true;
-            claimChristmasGiftBtn.textContent = 'Already Claimed';
-        }
-    })();
-
-    claimChristmasGiftBtn.addEventListener('click', ()=>{
-        const petId = 'pet_f_1';
-        const GIFT_FLAG_KEY = 'btf_gift_christmas2025_claimed';
-        const alreadyClaimed = localStorage.getItem(GIFT_FLAG_KEY) === '1' || (window.state && window.state.gifts && window.state.gifts.christmas2025);
-        if(alreadyClaimed){
-            claimChristmasGiftBtn.disabled = true;
-            claimChristmasGiftBtn.textContent = 'Already Claimed';
-            if(typeof showAlert === 'function'){
-                showAlert('Already claimed. Enjoy your Festive Reindeer!');
-            } else {
-                alert('Already claimed. Enjoy your Festive Reindeer!');
-            }
-            return;
-        }
-        
-        // Use window.state explicitly (set by index.js)
-        if(!window.state || !window.state.inventory){
-            // Initialize minimal structures to allow claim to proceed
-            window.state = window.state || {};
-            window.state.inventory = window.state.inventory || {};
-            window.state.bonusInventorySlots = window.state.bonusInventorySlots || 0;
-        }
-        
-        // Check inventory capacity
-        const maxSlots = 20 + (window.state.bonusInventorySlots || 0);
-        const currentCount = Object.values(window.state.inventory).reduce((s,v)=>s+v,0);
-        if(currentCount >= maxSlots){
-            if(typeof showAlert === 'function'){
-                showAlert(`Your pet inventory is full (${maxSlots} slots). Sell pets first.`);
-            } else {
-                alert(`Your pet inventory is full (${maxSlots} slots). Sell pets first.`);
-            }
-            return;
-        }
-        
-        // Grant the pet via global helper if available
-        let granted = false;
-        if(typeof window.grantPet === 'function'){
-            granted = !!window.grantPet(petId, 1);
-        }
-        if(!granted){
-            // Fallback: direct mutation guarded
-            window.state.inventory[petId] = (window.state.inventory[petId] || 0) + 1;
-            if(typeof window.saveState === 'function') window.saveState();
-            if(typeof window.updateUI === 'function') window.updateUI();
-        }
-
-        // Persist one-time claim in both state and localStorage
-        window.state.gifts = window.state.gifts || {};
-        window.state.gifts.christmas2025 = true;
-        try { localStorage.setItem(GIFT_FLAG_KEY, '1'); } catch(_) {}
-        if(typeof window.saveState === 'function') window.saveState();
-
-        // Update UI and notify
-        claimChristmasGiftBtn.disabled = true;
-        claimChristmasGiftBtn.textContent = 'Already Claimed';
-        if(typeof showAlert === 'function'){
-            showAlert('🎁 Christmas gift claimed successfully! Merry Christmas!');
-        } else {
-            alert('🎁 Christmas gift claimed successfully! Merry Christmas!');
-        }
-    });
-}
 
 // Gift Code redemption handler
 const giftCodeInput = document.getElementById('giftCodeInput');
@@ -2703,70 +2557,9 @@ document.addEventListener('DOMContentLoaded', () => {
 /*!**********************!*\
   !*** ./src/index.js ***!
   \**********************/
-// Seasonal events toggle
-(() => {
-	try {
-		const now = Date.now();
-		// Christmas 2025 window (local time): Nov 27 — Dec 31
-		const start = new Date(2025, 10, 27, 0, 0, 0).getTime(); // months 0-indexed
-		const end = new Date(2025, 11, 31, 23, 59, 59).getTime();
-		const active = now >= start && now <= end;
-		if (typeof document !== 'undefined' && document.body) {
-			document.body.classList.toggle('event-christmas', !!active);
-		}
-	} catch (_) {}
-})();
-
 // Console warning
 console.log('%c CHARLES SPENCER MCGINNIS CLOSE THE CONSOLE RIGHT THIS INSTANT', 'color: #ff0000; font-size: 24px; font-weight: bold;');
 console.log("%c You're not slick", 'color: #ffffffff; font-size: 12px; font-weight: bold;');
-
-// Christmas Update Modal logic (unified, non-recursive)
-(() => {
-	try {
-		if (typeof document === 'undefined') return;
-		const modal = document.getElementById('christmasUpdateModal');
-		const closeBtn = document.getElementById('closeChristmasUpdate');
-		if (!modal || !closeBtn) return; // not on this page
-
-		const STORAGE_FLAG = 'btf_seen_christmas_update';
-		const now = Date.now();
-		const start = new Date(2025, 10, 27, 0, 0, 0).getTime();
-		const end = new Date(2025, 11, 31, 23, 59, 59).getTime();
-		const active = now >= start && now <= end;
-		const alreadySeen = localStorage.getItem(STORAGE_FLAG) === '1';
-
-		function openModal() {
-			modal.style.display = 'flex';
-			const backdrop = modal.querySelector('.modal-backdrop');
-			if (backdrop) backdrop.style.display = 'block';
-			console.log('[Christmas] Modal opened');
-		}
-		function closeModal() {
-			modal.style.display = 'none';
-			const backdrop = modal.querySelector('.modal-backdrop');
-			if (backdrop) backdrop.style.display = 'none';
-			localStorage.setItem(STORAGE_FLAG, '1');
-			console.log('[Christmas] Modal closed & flagged');
-		}
-		closeBtn.addEventListener('click', closeModal);
-		modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
-		window.showChristmasModal = openModal; // global manual trigger
-
-		const urlParams = (typeof location !== 'undefined' && location.search) ? new URLSearchParams(location.search) : null;
-		const forceShow = urlParams ? urlParams.get('show_christmas') === '1' : false;
-		if (forceShow) {
-			setTimeout(openModal, 200);
-		} else if (active && !alreadySeen) {
-			// Show shortly after load so decorations render first
-			setTimeout(openModal, 400);
-		} else {
-			console.log('[Christmas] Modal not opened (active:', active, 'alreadySeen:', alreadySeen, ')');
-		}
-	} catch (e) {
-		console.warn('Christmas modal init failed', e);
-	}
-})();
 
 // Enchantment definitions for modal display
 const ENCHANTMENTS = [
@@ -2848,12 +2641,9 @@ const PETS = [
 	{ id: 'pet_s_1', name: 'Nightmare Skeleton', rarity: 'spooky', weight: 0.3, value: 2500 },
 	{ id: 'pet_ch_1', name: 'Chroma Beast', rarity: 'chromatic', weight: 0.025, value: 5000 },
 	{ id: 'pet_s_2', name: 'Spooky Ghost', rarity: 'spooky', weight: 0.3, value: 2200 },
-	{ id: 'pet_f_1', name: 'Festive Reindeer', rarity: 'festive', weight: 0.3, value: 2800 },
-	{ id: 'pet_f_2', name: 'Gingerbread Man', rarity: 'festive', weight: 0.3, value: 2500 },
-	{ id: 'pet_f_3', name: 'Santa', rarity: 'festive', weight: 0.2, value: 3000 },
 	{ id: 'pet_u_3', name: 'Max Verstappen', rarity: 'unique', weight: 0.0005, value: 10000000 },
 	{ id: 'pet_g_1', name: 'Celestial Archon', rarity: 'godly', weight: 0.00005, value: 50000000 },
-	{ id: 'pet_et_1', name: 'UnMega Knight', rarity: 'eternal', weight: 60, value: 100000000 }
+	{ id: 'pet_et_1', name: 'Sneaky Golem', rarity: 'eternal', weight: 0.0000005, value: 100000000 }
 ];
 
 // Prices
@@ -2889,7 +2679,6 @@ const EP_PER_SEC_PER_SPECIAL = 0.5; // was 1.0 per special pet per second
 // Halloween window: spooky items are available until Nov 1 of the current year (exclusive)
 const HALLOWEEN_END = (function(){ const y = new Date().getFullYear(); return new Date(y, 10, 1).getTime(); })();
 const THANKSGIVING_END = (function(){ const y = new Date().getFullYear(); return new Date(y, 11, 1).getTime(); })();
-const CHRISTMAS_END = (function(){ const y = new Date().getFullYear(); return new Date(y + 1, 0, 1).getTime(); })(); // Jan 1 next year
 
 // FRUITS: capsule pool
 const FRUITS = [
@@ -2909,10 +2698,8 @@ const FRUITS = [
 	{ id: 'fruit_u_1', name: 'Aurora Berry', rarity: 'unique', weight: 0.0005, value: 60000000 },
 	{ id: 'fruit_u_2', name: 'Cookiefruit', rarity: 'unique', weight: 0.0005, value: 60000000 },
 	{ id: 'fruit_s_1', name: 'Cursed Pumpkin', rarity: 'spooky', weight: 0.3, value: 800 },
-	{ id: 'fruit_f_1', name: 'Candy Cane', rarity: 'festive', weight: 0.3, value: 850 },
-	{ id: 'fruit_f_2', name: 'Christmas Cookie', rarity: 'festive', weight: 0.3, value: 900 },
 	{ id: 'fruit_g_1', name: 'Omnifruit', rarity: 'godly', weight: 0.00005, value: 100000000 },
-	{ id: 'fruit_et_1', name: 'Eternalfruit', rarity: 'eternal', weight: 60, value: 500000000 }
+	{ id: 'fruit_et_1', name: 'Eternalfruit', rarity: 'eternal', weight: 0.0000005, value: 500000000 }
 	
 
 
@@ -2931,14 +2718,7 @@ let state = {
 	potionActive: false,
 	potionEndsAt: 0,
 	luckStacks: 0,
-	christmasActive: false,
-	christmasEndsAt: 0,
 	bennyActive: false,
-	bennyEndsAt: 0,
-	bonusInventorySlots: 0, // extra slots from Slot Machine purchases
-	redeemedGiftCodes: [], // track used gift codes
-	petRerollsUsed: {}, // track pet enchant rerolls { 	petId_index: count }
-	tears: 0, // new currency for brewing
 	potionInventory: [] // brewed potions stored for later use
 };
 
@@ -3066,8 +2846,6 @@ function loadState(){
 				potionActive: parsed.potionActive ?? false,
 				potionEndsAt: parsed.potionEndsAt ?? 0,
 				luckStacks: parsed.luckStacks ?? 0,
-				christmasActive: parsed.christmasActive ?? false,
-				christmasEndsAt: parsed.christmasEndsAt ?? 0,
 				bennyActive: parsed.bennyActive ?? false,
 				bennyEndsAt: parsed.bennyEndsAt ?? 0,
 				blessingActive: parsed.blessingActive ?? false,
@@ -3100,9 +2878,7 @@ function loadState(){
 						bonusInventorySlots: 0,
 						redeemedGiftCodes: [],
 						tears: 0,
-						potionInventory: [],
-						christmasActive: false,
-						christmasEndsAt: 0
+						potionInventory: []
 					};
 					// Persist a clean save and hash right away
 					try{
@@ -3152,8 +2928,6 @@ window.loadServerState = function(serverState) {
 			potionActive: serverState.potionActive ?? false,
 			potionEndsAt: serverState.potionEndsAt ?? 0,
 			luckStacks: serverState.luckStacks ?? 0,
-			christmasActive: serverState.christmasActive ?? false,
-			christmasEndsAt: serverState.christmasEndsAt ?? 0,
 			bennyActive: serverState.bennyActive ?? false,
 			bennyEndsAt: serverState.bennyEndsAt ?? 0,
 			blessingActive: serverState.blessingActive ?? false,
@@ -3189,16 +2963,13 @@ function saveState(){
 function weightedPick(items){
 	// Check if luck potion is active
 	const potionActive = state.potionActive && state.potionEndsAt > Date.now();
-	const christmasBuff = state.christmasActive && state.christmasEndsAt > Date.now();
 	const cappedStacks = Math.min(state.luckStacks, 49); // Caps multiplier at ~99x (1 + 49*2)
 	const multiplier = potionActive ? Math.min(1 + cappedStacks * 2, 100) : 1;
 
 	// If current date is past HALLOWEEN_END, exclude spooky items from the pick pool
 	const halloweenStillOn = Date.now() < HALLOWEEN_END;
-	const christmasStillOn = Date.now() < CHRISTMAS_END;
 	const pool = items.filter(i => {
 		if (i.rarity === 'spooky' && !halloweenStillOn) return false;
-		if (i.rarity === 'festive' && !christmasStillOn) return false;
 		return true;
 	});
 	const finalPool = pool;
@@ -3229,10 +3000,6 @@ function weightedPick(items){
 		if(potionActive) {
 			const boost = rarityBoost[i.rarity] || 1;
 			w = i.weight * boost**multiplier;
-		}
-		// Christmas Spirit Potion: make festive items more common
-		if (christmasBuff && i.rarity === 'festive') {
-			w *= 3; // 3x more likely while potion is active
 		}
 		return w;
 	});
@@ -4319,6 +4086,40 @@ function setupModals() {
 		});
 	}
 
+	// Eternal Update modal: show on first visit (after Halloween modal if both unseen)
+	const eternalUpdateModal = document.getElementById('eternalUpdateModal');
+	const closeEternalUpdate = document.getElementById('closeEternalUpdate');
+	if(eternalUpdateModal && closeEternalUpdate){
+		const hasSeenEternalUpdate = localStorage.getItem('btf_seen_eternal_update');
+		const hasSeenHalloweenUpdate = localStorage.getItem('btf_seen_halloween_update');
+
+		// Show Eternal update after Halloween modal is closed (or immediately if Halloween was already seen)
+		const showEternalUpdate = () => {
+			if(!hasSeenEternalUpdate){
+				eternalUpdateModal.style.display = 'flex';
+			}
+		};
+		
+		if(!hasSeenHalloweenUpdate){
+			// Wait for Halloween modal to close before showing Eternal update
+			closeHalloweenUpdate?.addEventListener('click', ()=>{
+				setTimeout(showEternalUpdate, 300);
+			});
+		} else {
+			// Show immediately if Halloween was already seen
+			showEternalUpdate();
+		}
+		
+		closeEternalUpdate.addEventListener('click', ()=>{
+			eternalUpdateModal.style.display = 'none';
+			localStorage.setItem('btf_seen_eternal_update', 'true');
+		});
+		eternalUpdateModal.querySelector('.modal-backdrop')?.addEventListener('click', ()=>{
+			eternalUpdateModal.style.display = 'none';
+			localStorage.setItem('btf_seen_eternal_update', 'true');
+		});
+	}
+
 	// Pet info modal close
 	const closePetInfo = document.getElementById('closePetInfo');
 	const petInfoModal = document.getElementById('petInfoModal');
@@ -4625,7 +4426,6 @@ setInterval(()=>{
 	if(state.potionActive && state.potionEndsAt <= Date.now()){ state.potionActive = false; state.luckStacks = 0; dirty = true; }
 	if(state.bennyActive && state.bennyEndsAt <= Date.now()){ state.bennyActive = false; dirty = true; }
 	if(state.blessingActive && state.blessingEndsAt <= Date.now()){ state.blessingActive = false; dirty = true; }
-	if(state.christmasActive && state.christmasEndsAt <= Date.now()){ state.christmasActive = false; dirty = true; }
 	if(dirty){ saveState(); updateUI(); }
 }, 1000);
 

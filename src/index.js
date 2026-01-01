@@ -1,67 +1,6 @@
-// Seasonal events toggle
-(() => {
-	try {
-		const now = Date.now();
-		// Christmas 2025 window (local time): Nov 27 — Dec 31
-		const start = new Date(2025, 10, 27, 0, 0, 0).getTime(); // months 0-indexed
-		const end = new Date(2025, 11, 31, 23, 59, 59).getTime();
-		const active = now >= start && now <= end;
-		if (typeof document !== 'undefined' && document.body) {
-			document.body.classList.toggle('event-christmas', !!active);
-		}
-	} catch (_) {}
-})();
-
 // Console warning
 console.log('%c CHARLES SPENCER MCGINNIS CLOSE THE CONSOLE RIGHT THIS INSTANT', 'color: #ff0000; font-size: 24px; font-weight: bold;');
 console.log("%c You're not slick", 'color: #ffffffff; font-size: 12px; font-weight: bold;');
-
-// Christmas Update Modal logic (unified, non-recursive)
-(() => {
-	try {
-		if (typeof document === 'undefined') return;
-		const modal = document.getElementById('christmasUpdateModal');
-		const closeBtn = document.getElementById('closeChristmasUpdate');
-		if (!modal || !closeBtn) return; // not on this page
-
-		const STORAGE_FLAG = 'btf_seen_christmas_update';
-		const now = Date.now();
-		const start = new Date(2025, 10, 27, 0, 0, 0).getTime();
-		const end = new Date(2025, 11, 31, 23, 59, 59).getTime();
-		const active = now >= start && now <= end;
-		const alreadySeen = localStorage.getItem(STORAGE_FLAG) === '1';
-
-		function openModal() {
-			modal.style.display = 'flex';
-			const backdrop = modal.querySelector('.modal-backdrop');
-			if (backdrop) backdrop.style.display = 'block';
-			console.log('[Christmas] Modal opened');
-		}
-		function closeModal() {
-			modal.style.display = 'none';
-			const backdrop = modal.querySelector('.modal-backdrop');
-			if (backdrop) backdrop.style.display = 'none';
-			localStorage.setItem(STORAGE_FLAG, '1');
-			console.log('[Christmas] Modal closed & flagged');
-		}
-		closeBtn.addEventListener('click', closeModal);
-		modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
-		window.showChristmasModal = openModal; // global manual trigger
-
-		const urlParams = (typeof location !== 'undefined' && location.search) ? new URLSearchParams(location.search) : null;
-		const forceShow = urlParams ? urlParams.get('show_christmas') === '1' : false;
-		if (forceShow) {
-			setTimeout(openModal, 200);
-		} else if (active && !alreadySeen) {
-			// Show shortly after load so decorations render first
-			setTimeout(openModal, 400);
-		} else {
-			console.log('[Christmas] Modal not opened (active:', active, 'alreadySeen:', alreadySeen, ')');
-		}
-	} catch (e) {
-		console.warn('Christmas modal init failed', e);
-	}
-})();
 
 // Enchantment definitions for modal display
 const ENCHANTMENTS = [
@@ -143,9 +82,6 @@ const PETS = [
 	{ id: 'pet_s_1', name: 'Nightmare Skeleton', rarity: 'spooky', weight: 0.3, value: 2500 },
 	{ id: 'pet_ch_1', name: 'Chroma Beast', rarity: 'chromatic', weight: 0.025, value: 5000 },
 	{ id: 'pet_s_2', name: 'Spooky Ghost', rarity: 'spooky', weight: 0.3, value: 2200 },
-	{ id: 'pet_f_1', name: 'Festive Reindeer', rarity: 'festive', weight: 0.3, value: 2800 },
-	{ id: 'pet_f_2', name: 'Gingerbread Man', rarity: 'festive', weight: 0.3, value: 2500 },
-	{ id: 'pet_f_3', name: 'Santa', rarity: 'festive', weight: 0.2, value: 3000 },
 	{ id: 'pet_u_3', name: 'Max Verstappen', rarity: 'unique', weight: 0.0005, value: 10000000 },
 	{ id: 'pet_g_1', name: 'Celestial Archon', rarity: 'godly', weight: 0.00005, value: 50000000 },
 	{ id: 'pet_et_1', name: 'Sneaky Golem', rarity: 'eternal', weight: 0.0000005, value: 100000000 }
@@ -184,7 +120,6 @@ const EP_PER_SEC_PER_SPECIAL = 0.5; // was 1.0 per special pet per second
 // Halloween window: spooky items are available until Nov 1 of the current year (exclusive)
 const HALLOWEEN_END = (function(){ const y = new Date().getFullYear(); return new Date(y, 10, 1).getTime(); })();
 const THANKSGIVING_END = (function(){ const y = new Date().getFullYear(); return new Date(y, 11, 1).getTime(); })();
-const CHRISTMAS_END = (function(){ const y = new Date().getFullYear(); return new Date(y + 1, 0, 1).getTime(); })(); // Jan 1 next year
 
 // FRUITS: capsule pool
 const FRUITS = [
@@ -204,8 +139,6 @@ const FRUITS = [
 	{ id: 'fruit_u_1', name: 'Aurora Berry', rarity: 'unique', weight: 0.0005, value: 60000000 },
 	{ id: 'fruit_u_2', name: 'Cookiefruit', rarity: 'unique', weight: 0.0005, value: 60000000 },
 	{ id: 'fruit_s_1', name: 'Cursed Pumpkin', rarity: 'spooky', weight: 0.3, value: 800 },
-	{ id: 'fruit_f_1', name: 'Candy Cane', rarity: 'festive', weight: 0.3, value: 850 },
-	{ id: 'fruit_f_2', name: 'Christmas Cookie', rarity: 'festive', weight: 0.3, value: 900 },
 	{ id: 'fruit_g_1', name: 'Omnifruit', rarity: 'godly', weight: 0.00005, value: 100000000 },
 	{ id: 'fruit_et_1', name: 'Eternalfruit', rarity: 'eternal', weight: 0.0000005, value: 500000000 }
 	
@@ -226,14 +159,7 @@ let state = {
 	potionActive: false,
 	potionEndsAt: 0,
 	luckStacks: 0,
-	christmasActive: false,
-	christmasEndsAt: 0,
 	bennyActive: false,
-	bennyEndsAt: 0,
-	bonusInventorySlots: 0, // extra slots from Slot Machine purchases
-	redeemedGiftCodes: [], // track used gift codes
-	petRerollsUsed: {}, // track pet enchant rerolls { 	petId_index: count }
-	tears: 0, // new currency for brewing
 	potionInventory: [] // brewed potions stored for later use
 };
 
@@ -361,8 +287,6 @@ function loadState(){
 				potionActive: parsed.potionActive ?? false,
 				potionEndsAt: parsed.potionEndsAt ?? 0,
 				luckStacks: parsed.luckStacks ?? 0,
-				christmasActive: parsed.christmasActive ?? false,
-				christmasEndsAt: parsed.christmasEndsAt ?? 0,
 				bennyActive: parsed.bennyActive ?? false,
 				bennyEndsAt: parsed.bennyEndsAt ?? 0,
 				blessingActive: parsed.blessingActive ?? false,
@@ -395,9 +319,7 @@ function loadState(){
 						bonusInventorySlots: 0,
 						redeemedGiftCodes: [],
 						tears: 0,
-						potionInventory: [],
-						christmasActive: false,
-						christmasEndsAt: 0
+						potionInventory: []
 					};
 					// Persist a clean save and hash right away
 					try{
@@ -447,8 +369,6 @@ window.loadServerState = function(serverState) {
 			potionActive: serverState.potionActive ?? false,
 			potionEndsAt: serverState.potionEndsAt ?? 0,
 			luckStacks: serverState.luckStacks ?? 0,
-			christmasActive: serverState.christmasActive ?? false,
-			christmasEndsAt: serverState.christmasEndsAt ?? 0,
 			bennyActive: serverState.bennyActive ?? false,
 			bennyEndsAt: serverState.bennyEndsAt ?? 0,
 			blessingActive: serverState.blessingActive ?? false,
@@ -484,16 +404,13 @@ function saveState(){
 function weightedPick(items){
 	// Check if luck potion is active
 	const potionActive = state.potionActive && state.potionEndsAt > Date.now();
-	const christmasBuff = state.christmasActive && state.christmasEndsAt > Date.now();
 	const cappedStacks = Math.min(state.luckStacks, 49); // Caps multiplier at ~99x (1 + 49*2)
 	const multiplier = potionActive ? Math.min(1 + cappedStacks * 2, 100) : 1;
 
 	// If current date is past HALLOWEEN_END, exclude spooky items from the pick pool
 	const halloweenStillOn = Date.now() < HALLOWEEN_END;
-	const christmasStillOn = Date.now() < CHRISTMAS_END;
 	const pool = items.filter(i => {
 		if (i.rarity === 'spooky' && !halloweenStillOn) return false;
-		if (i.rarity === 'festive' && !christmasStillOn) return false;
 		return true;
 	});
 	const finalPool = pool;
@@ -524,10 +441,6 @@ function weightedPick(items){
 		if(potionActive) {
 			const boost = rarityBoost[i.rarity] || 1;
 			w = i.weight * boost**multiplier;
-		}
-		// Christmas Spirit Potion: make festive items more common
-		if (christmasBuff && i.rarity === 'festive') {
-			w *= 3; // 3x more likely while potion is active
 		}
 		return w;
 	});
@@ -1954,7 +1867,6 @@ setInterval(()=>{
 	if(state.potionActive && state.potionEndsAt <= Date.now()){ state.potionActive = false; state.luckStacks = 0; dirty = true; }
 	if(state.bennyActive && state.bennyEndsAt <= Date.now()){ state.bennyActive = false; dirty = true; }
 	if(state.blessingActive && state.blessingEndsAt <= Date.now()){ state.blessingActive = false; dirty = true; }
-	if(state.christmasActive && state.christmasEndsAt <= Date.now()){ state.christmasActive = false; dirty = true; }
 	if(dirty){ saveState(); updateUI(); }
 }, 1000);
 

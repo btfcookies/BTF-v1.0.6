@@ -1,5 +1,3 @@
-// Christmas Gift dynamic card removed per request. No injection.
-
 // Shop functionality
 // Guard: only run if shop page elements exist
 if (!document.getElementById('buyLuckPotion')) {
@@ -18,8 +16,6 @@ const BENNY_COST = 10000;
 const BENNY_DURATION = 5 * 60 * 1000; // 5 minutes
 const BLESSING_COST = 8000;
 const BLESSING_DURATION = 5 * 60 * 1000; // 5 minutes
-const CHRISTMAS_COST = 150000;
-const CHRISTMAS_DURATION = 5 * 60 * 1000; // 5 minutes
 const SLOT_MACHINE_COST = 1000000;
 const SLOT_MACHINE_BONUS = 5;
 
@@ -30,8 +26,6 @@ const buyBennyBtn = document.getElementById('buyBennyBoost');
 const bennyTimerEl = document.getElementById('bennyTimer');
 const buyBlessingBtn = document.getElementById('buyPumpkinBlessing');
 const blessingTimerEl = document.getElementById('blessingTimer');
-const buyChristmasBtn = document.getElementById('buyChristmasPotion');
-const christmasTimerEl = document.getElementById('christmasTimer');
 const buySlotMachineBtn = document.getElementById('buySlotMachine');
 const slotsPurchasedEl = document.getElementById('slotsPurchased');
 const buyThanksgivingPotion = document.getElementById('buyThanksgivingPotion');
@@ -69,8 +63,6 @@ function loadState() {
             window.state.bennyEndsAt = parsed.bennyEndsAt ?? 0;
             window.state.blessingActive = parsed.blessingActive ?? false;
             window.state.blessingEndsAt = parsed.blessingEndsAt ?? 0;
-            window.state.christmasActive = parsed.christmasActive ?? false;
-            window.state.christmasEndsAt = parsed.christmasEndsAt ?? 0;
             window.state.purchasedItems = parsed.purchasedItems ?? [];
             window.state.bonusInventorySlots = parsed.bonusInventorySlots ?? 0;
             window.state.inventory = parsed.inventory ?? (window.state.inventory || {});
@@ -122,21 +114,6 @@ function updateUI() {
             blessingTimerEl.style.display = 'inline';
         } else {
             blessingTimerEl.style.display = 'none';
-        }
-    }
-    
-    // Christmas UI
-    if(christmasTimerEl){
-        const chrActive = window.state.christmasActive && window.state.christmasEndsAt > Date.now();
-        if(buyChristmasBtn) buyChristmasBtn.disabled = window.state.coins < CHRISTMAS_COST || chrActive;
-        if(chrActive){
-            const remaining = Math.ceil((window.state.christmasEndsAt - Date.now())/1000);
-            const minutes = Math.floor(remaining/60);
-            const seconds = remaining%60;
-            christmasTimerEl.textContent = `${minutes}:${seconds.toString().padStart(2,'0')} remaining`;
-            christmasTimerEl.style.display = 'inline';
-        } else {
-            christmasTimerEl.style.display = 'none';
         }
     }
     
@@ -387,52 +364,6 @@ if(buyBlessingBtn){
     });
 }
 
-// Buy Christmas Spirit Potion - TEMPORARILY DISABLED
-if(buyChristmasBtn){
-    buyChristmasBtn.addEventListener('click', ()=>{
-        if(typeof showAlert === 'function'){
-            showAlert('This item is temporarily unavailable!');
-        } else {
-            alert('This item is temporarily unavailable!');
-        }
-        return;
-        
-        /* DISABLED CODE
-        if(window.state.coins >= CHRISTMAS_COST){
-            window.state.coins -= CHRISTMAS_COST;
-            window.state.christmasActive = true;
-            window.state.christmasEndsAt = Date.now() + CHRISTMAS_DURATION;
-            
-            // Properly manage luck stacks with the potion system
-            if (window.state.potionActive && window.state.potionEndsAt > Date.now()) {
-                // Already active: add 1 stack (max 100), reset timer
-                window.state.luckStacks = Math.min((window.state.luckStacks || 0) + 1, 100);
-                window.state.potionEndsAt = Date.now() + CHRISTMAS_DURATION;
-            } else {
-                // Not active or expired: start new effect with 1 stack
-                window.state.potionActive = true;
-                window.state.luckStacks = 1;
-                window.state.potionEndsAt = Date.now() + CHRISTMAS_DURATION;
-            }
-            
-            if(typeof window.saveState === 'function') window.saveState();
-            updateUI();
-            if(typeof showAlert === 'function'){
-                showAlert('🎄 Christmas Spirit Potion activated! +2x luck for 5 minutes!');
-            } else {
-                alert('🎄 Christmas Spirit Potion activated! +2x luck for 5 minutes!');
-            }
-        } else {
-            if(typeof showAlert === 'function'){
-                showAlert('Not enough coins!');
-            } else {
-                alert('Not enough coins!');
-            }
-        }
-        */
-    });
-}
-
 // Buy Slot Machine
 if(buySlotMachineBtn){
     buySlotMachineBtn.addEventListener('click', ()=>{
@@ -477,83 +408,6 @@ if(buyThanksgivingPotion){
         }
     });
 } 
-
-// Christmas Gift Claim handler
-const claimChristmasGiftBtn = document.getElementById('claimChristmasGift');
-if(claimChristmasGiftBtn){
-    // Disable button immediately if already claimed (on page load)
-    (function(){
-        const GIFT_FLAG_KEY = 'btf_gift_christmas2025_claimed';
-        const alreadyClaimed = localStorage.getItem(GIFT_FLAG_KEY) === '1' || (window.state && window.state.gifts && window.state.gifts.christmas2025);
-        if(alreadyClaimed){
-            claimChristmasGiftBtn.disabled = true;
-            claimChristmasGiftBtn.textContent = 'Already Claimed';
-        }
-    })();
-
-    claimChristmasGiftBtn.addEventListener('click', ()=>{
-        const petId = 'pet_f_1';
-        const GIFT_FLAG_KEY = 'btf_gift_christmas2025_claimed';
-        const alreadyClaimed = localStorage.getItem(GIFT_FLAG_KEY) === '1' || (window.state && window.state.gifts && window.state.gifts.christmas2025);
-        if(alreadyClaimed){
-            claimChristmasGiftBtn.disabled = true;
-            claimChristmasGiftBtn.textContent = 'Already Claimed';
-            if(typeof showAlert === 'function'){
-                showAlert('Already claimed. Enjoy your Festive Reindeer!');
-            } else {
-                alert('Already claimed. Enjoy your Festive Reindeer!');
-            }
-            return;
-        }
-        
-        // Use window.state explicitly (set by index.js)
-        if(!window.state || !window.state.inventory){
-            // Initialize minimal structures to allow claim to proceed
-            window.state = window.state || {};
-            window.state.inventory = window.state.inventory || {};
-            window.state.bonusInventorySlots = window.state.bonusInventorySlots || 0;
-        }
-        
-        // Check inventory capacity
-        const maxSlots = 20 + (window.state.bonusInventorySlots || 0);
-        const currentCount = Object.values(window.state.inventory).reduce((s,v)=>s+v,0);
-        if(currentCount >= maxSlots){
-            if(typeof showAlert === 'function'){
-                showAlert(`Your pet inventory is full (${maxSlots} slots). Sell pets first.`);
-            } else {
-                alert(`Your pet inventory is full (${maxSlots} slots). Sell pets first.`);
-            }
-            return;
-        }
-        
-        // Grant the pet via global helper if available
-        let granted = false;
-        if(typeof window.grantPet === 'function'){
-            granted = !!window.grantPet(petId, 1);
-        }
-        if(!granted){
-            // Fallback: direct mutation guarded
-            window.state.inventory[petId] = (window.state.inventory[petId] || 0) + 1;
-            if(typeof window.saveState === 'function') window.saveState();
-            if(typeof window.updateUI === 'function') window.updateUI();
-        }
-
-        // Persist one-time claim in both state and localStorage
-        window.state.gifts = window.state.gifts || {};
-        window.state.gifts.christmas2025 = true;
-        try { localStorage.setItem(GIFT_FLAG_KEY, '1'); } catch(_) {}
-        if(typeof window.saveState === 'function') window.saveState();
-
-        // Update UI and notify
-        claimChristmasGiftBtn.disabled = true;
-        claimChristmasGiftBtn.textContent = 'Already Claimed';
-        if(typeof showAlert === 'function'){
-            showAlert('🎁 Christmas gift claimed successfully! Merry Christmas!');
-        } else {
-            alert('🎁 Christmas gift claimed successfully! Merry Christmas!');
-        }
-    });
-}
 
 // Gift Code redemption handler
 const giftCodeInput = document.getElementById('giftCodeInput');
