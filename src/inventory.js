@@ -20,6 +20,10 @@ const closePetDetail = document.getElementById('closePetDetail');
 const petDetailName = document.getElementById('petDetailName');
 const enchantList = document.getElementById('enchantList');
 
+// Shared luck tuning
+const luckStackBonus = window.LUCK_STACK_BONUS || 1.2;
+const formatLuck = window.formatLuckMultiplier || ((val)=> Number.isInteger(val) ? val : Number(val.toFixed(1)));
+
 // Load state
 function loadState() {
     try {
@@ -83,9 +87,9 @@ function updateUI() {
     
     // Update luck multiplier
     if(luckMultiplierEl){
-        const isActive = window.state.potionActive && window.state.potionEndsAt > Date.now();
-        const cappedStacks = Math.min(window.state.luckStacks, 100);
-        luckMultiplierEl.textContent = isActive ? `${1 + cappedStacks * 2}x` : "1x";
+        const { multiplier } = window.getLuckInfo ? window.getLuckInfo() : { multiplier: 1 };
+        const displayMult = formatLuck(multiplier);
+        luckMultiplierEl.textContent = `${displayMult}x`;
     }
     
     // Update active effects
@@ -94,16 +98,16 @@ function updateUI() {
         const remaining = Math.ceil((window.state.potionEndsAt - Date.now()) / 1000);
         const minutes = Math.floor(remaining / 60);
         const seconds = remaining % 60;
-        const cappedStacks = Math.min(window.state.luckStacks, 100);
-        
-        const effectEl = document.createElement('div');
-        effectEl.className = 'item-card';
-        effectEl.innerHTML = `
+		const { cappedStacks } = window.getLuckInfo ? window.getLuckInfo() : { cappedStacks: Math.min(window.state.luckStacks || 0, window.LUCK_STACK_CAP || 150) };
+		
+		const effectEl = document.createElement('div');
+		effectEl.className = 'item-card';
+		effectEl.innerHTML = `
             <div class="item-icon">🧪</div>
             <div class="item-info">
                 <h3>Luck Potion</h3>
                 <p class="effect-active">Active - ${minutes}:${seconds.toString().padStart(2, '0')} remaining</p>
-                <p>+${cappedStacks * 2}x luck boost (${cappedStacks} stack${cappedStacks !== 1 ? 's' : ''})</p>
+                <p>+${formatLuck(cappedStacks * luckStackBonus)}x luck boost (${cappedStacks} stack${cappedStacks !== 1 ? 's' : ''})</p>
             </div>
         `;
         activeEffectsEl.appendChild(effectEl);

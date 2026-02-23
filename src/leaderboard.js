@@ -74,7 +74,10 @@ const PETS = [
 	{ id: 'pet_l_1', name: 'Infinity Golem', rarity: 'legendary', weight: 0.5, value: 1200 },
 	{ id: 'pet_s_1', name: 'Nightmare Skeleton', rarity: 'spooky', weight: 0.3, value: 2500 },
 	{ id: 'pet_ch_1', name: 'Chroma Beast', rarity: 'chromatic', weight: 0.25, value: 5000 },
-	{ id: 'pet_s_2', name: 'Spooky Ghost', rarity: 'spooky', weight: 0.3, value: 2200 }
+	{ id: 'pet_s_2', name: 'Spooky Ghost', rarity: 'spooky', weight: 0.3, value: 2200 },
+	{ id: 'pet_f_1', name: 'Festive Reindeer', rarity: 'festive', weight: 0, value: 3000 },
+	{ id: 'pet_f_2', name: 'Frostfire Wolf', rarity: 'festive', weight: 0, value: 2800 },
+	{ id: 'pet_f_3', name: 'Snowflake Sprite', rarity: 'festive', weight: 0, value: 2600 }
 ];
 
 const FRUITS = [
@@ -87,6 +90,9 @@ const FRUITS = [
 	{ id: 'fruit_u_2', name: 'Stellar Pomegranate', rarity: 'unique', weight: 0.04, value: 6000 },
 	{ id: 'fruit_l_1', name: 'Cosmic Shard', rarity: 'legendary', weight: 0.8, value: 450 },
 	{ id: 'fruit_s_1', name: 'Cursed Pumpkin', rarity: 'spooky', weight: 0.4, value: 600 },
+	{ id: 'fruit_f_1', name: 'Candy Cane', rarity: 'festive', weight: 0, value: 1000 },
+	{ id: 'fruit_f_2', name: 'Gingerbread Cookie', rarity: 'festive', weight: 0, value: 900 },
+	{ id: 'fruit_f_3', name: 'Frosted Berry', rarity: 'festive', weight: 0, value: 850 },
 	{ id: 'fruit_ch_1', name: 'Prism Crystal', rarity: 'chromatic', weight: 0.3, value: 1200 }
 ];
 
@@ -97,6 +103,7 @@ const RARITY_CPS = {
 	epic: 8,
 	special: 12,
 	legendary: 20,
+	festive: 30,
 	spooky: 30,
 	chromatic: 80,
 	unique: 60,

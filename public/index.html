@@ -14,62 +14,109 @@
 
 		<script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
 <script>
-const socket = io("http://192.168.4.103:3000", {
-    transports: ['websocket', 'polling'],
-    reconnection: true,
-    reconnectionDelay: 1000,
-    reconnectionAttempts: 5
-});
+let socket = null;
 let isConnected = false;
 let playerId = null;
 
-// Connection established
-socket.on("connected", (data) => {
-    console.log("[Server] Connected to server with ID:", data.id);
-    playerId = data.id;
-    isConnected = true;
-    updateServerStatus('online');
+// Initialize socket connection
+function initializeSocket() {
+    playerId = 'player_' + Math.random().toString(36).substr(2, 9);
     
-    // Load state from server on connect
-    socket.emit("loadState");
-});
+    socket = io("http://192.168.4.103:3000", {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5
+    });
 
-// Connection events
-socket.on("connect", () => {
-    console.log("[Server] Socket connected, waiting for server handshake...");
-    updateServerStatus('connecting');
-    // Fallback: if server doesn't send "connected" event within 2 seconds, assume connected
-    setTimeout(() => {
-        if (!isConnected) {
-            console.warn("[Server] No 'connected' event received, but socket is open. Treating as connected.");
-            isConnected = true;
-            playerId = socket.id;
-            updateServerStatus('online');
-            socket.emit("loadState");
+    // Connection established
+    socket.on("connected", (data) => {
+        console.log("[Server] Connected to server");
+        isConnected = true;
+        updateServerStatus('online');
+        
+        // Load state from server on connect
+        socket.emit("loadState");
+    });
+
+    // Connection events
+    socket.on("connect", () => {
+        console.log("[Server] Socket connected, waiting for server handshake...");
+        updateServerStatus('connecting');
+        // Fallback: if server doesn't send "connected" event within 2 seconds, assume connected
+        setTimeout(() => {
+            if (!isConnected) {
+                console.warn("[Server] No 'connected' event received, but socket is open. Treating as connected.");
+                isConnected = true;
+                updateServerStatus('online');
+                socket.emit("loadState");
+            }
+        }, 2000);
+    });
+
+    socket.on("disconnect", (reason) => {
+        console.warn("[Server] Disconnected:", reason);
+        isConnected = false;
+        updateServerStatus('offline');
+    });
+
+    socket.on("connect_error", (error) => {
+        console.error("[Server] Connection error:", error.message);
+        isConnected = false;
+        updateServerStatus('error');
+    });
+
+    socket.on("reconnect_attempt", (attemptNumber) => {
+        console.log("[Server] Reconnection attempt", attemptNumber);
+        updateServerStatus('reconnecting');
+    });
+
+    socket.on("reconnect_failed", () => {
+        console.error("[Server] Failed to reconnect after multiple attempts");
+        updateServerStatus('failed');
+    });
+
+    // Receive all players
+    socket.on("currentPlayers", (players) => {
+        console.log("[Server] Players:", players);
+    });
+
+    // New player joined
+    socket.on("newPlayer", (player) => {
+        console.log("[Server] A new player joined:", player);
+    });
+
+    // State loaded from server
+    socket.on("stateLoaded", (serverState) => {
+        console.log("[Server] State loaded from server:", serverState);
+        if (serverState && typeof window.loadServerState === 'function') {
+            window.loadServerState(serverState);
         }
-    }, 2000);
-});
+    });
 
-socket.on("disconnect", (reason) => {
-    console.warn("[Server] Disconnected:", reason);
-    isConnected = false;
-    updateServerStatus('offline');
-});
+    // State saved confirmation
+    socket.on("stateSaved", (response) => {
+        if (response.success) {
+            console.log("[Server] State saved to server successfully");
+        }
+    });
 
-socket.on("connect_error", (error) => {
-    console.error("[Server] Connection error:", error.message);
-    isConnected = false;
-    updateServerStatus('error');
-});
+    // Make socket available globally
+    window.gameSocket = socket;
+    window.isServerConnected = () => isConnected;
+}
 
-socket.on("reconnect_attempt", (attemptNumber) => {
-    console.log("[Server] Reconnection attempt", attemptNumber);
-    updateServerStatus('reconnecting');
-});
-
-socket.on("reconnect_failed", () => {
-    console.error("[Server] Failed to reconnect after multiple attempts");
-    updateServerStatus('failed');
+// Setup on load
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize socket immediately without login
+    initializeSocket();
+    
+    // Load the main game
+    setTimeout(() => {
+        if (typeof initGame === 'function') {
+            initGame();
+        }
+    }, 200);
 });
 
 // Update server status indicator
@@ -97,41 +144,14 @@ function updateServerStatus(status) {
         }
     }, 100);
 }
-
-// Receive all players
-socket.on("currentPlayers", (players) => {
-    console.log("[Server] Players:", players);
-});
-
-// New player joined
-socket.on("newPlayer", (player) => {
-    console.log("[Server] A new player joined:", player);
-});
-
-// State loaded from server
-socket.on("stateLoaded", (serverState) => {
-    console.log("[Server] State loaded from server:", serverState);
-    if (serverState && typeof window.loadServerState === 'function') {
-        window.loadServerState(serverState);
-    }
-});
-
-// State saved confirmation
-socket.on("stateSaved", (response) => {
-    if (response.success) {
-        console.log("[Server] State saved to server successfully");
-    }
-});
-
-// Make socket available globally
-window.gameSocket = socket;
-window.isServerConnected = () => isConnected;
 </script>
 
 
 
 	</head>
 	<body>
+
+
 		<script><!-- Event class toggle -->
 		(function(){try{var now=Date.now();var start=new Date(2025,10,27,0,0,0).getTime();var end=new Date(2025,11,31,23,59,59).getTime();var active=now>=start&&now<=end;if(active){document.body.classList.add('event-christmas');}}catch(e){}})();
 		</script>
@@ -175,6 +195,7 @@ window.isServerConnected = () => isConnected;
 			<a href="news.html">News</a>
 		</nav>
 
+		
 
 
 		<main>

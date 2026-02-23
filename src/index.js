@@ -82,6 +82,9 @@ const PETS = [
 	{ id: 'pet_s_1', name: 'Nightmare Skeleton', rarity: 'spooky', weight: 0.3, value: 2500 },
 	{ id: 'pet_ch_1', name: 'Chroma Beast', rarity: 'chromatic', weight: 0.025, value: 5000 },
 	{ id: 'pet_s_2', name: 'Spooky Ghost', rarity: 'spooky', weight: 0.3, value: 2200 },
+	{ id: 'pet_f_1', name: 'Festive Reindeer', rarity: 'festive', weight: 0, value: 3000 },
+	{ id: 'pet_f_2', name: 'Frostfire Wolf', rarity: 'festive', weight: 0, value: 2800 },
+	{ id: 'pet_f_3', name: 'Snowflake Sprite', rarity: 'festive', weight: 0, value: 2600 },
 	{ id: 'pet_u_3', name: 'Max Verstappen', rarity: 'unique', weight: 0.0005, value: 10000000 },
 	{ id: 'pet_g_1', name: 'Celestial Archon', rarity: 'godly', weight: 0.00005, value: 50000000 },
 	{ id: 'pet_et_1', name: 'Sneaky Golem', rarity: 'eternal', weight: 0.0000005, value: 100000000 }
@@ -130,7 +133,7 @@ const FRUITS = [
 	{ id: 'fruit_l_1', name: 'Eternal Mango', rarity: 'legendary', weight: 0.5, value: 200 },
 	{id: 'fruit_c_3', name: 'Dirtfruit', rarity: 'common', weight: 50, value: 5},
 	{id: 'fruit_c_4', name: 'Watermelon', rarity: 'common', weight: 50, value: 5},
-	{id: 'fruit_ch_1', name: 'Chromafruit', rarity: 'chromatic', weight: 0.025, value: 1200},
+	{id: 'fruit_ch_1', name: 'Chromafruit', rarity: 'chromatic', weight: 60, value: 1200},
 	{ id: 'fruit_r_2', name: 'Lunar Melon', rarity: 'rare', weight: 35, value: 30 },
 	{ id: 'fruit_e_2', name: 'Solar Melon', rarity: 'epic', weight: 10, value: 150 },
 	{ id: 'fruit_l_2', name: 'Mythic Pineapple', rarity: 'legendary', weight: 0.5, value: 200 },
@@ -139,6 +142,9 @@ const FRUITS = [
 	{ id: 'fruit_u_1', name: 'Aurora Berry', rarity: 'unique', weight: 0.0005, value: 60000000 },
 	{ id: 'fruit_u_2', name: 'Cookiefruit', rarity: 'unique', weight: 0.0005, value: 60000000 },
 	{ id: 'fruit_s_1', name: 'Cursed Pumpkin', rarity: 'spooky', weight: 0.3, value: 800 },
+	{ id: 'fruit_f_1', name: 'Candy Cane', rarity: 'festive', weight: 0, value: 1000 },
+	{ id: 'fruit_f_2', name: 'Gingerbread Cookie', rarity: 'festive', weight: 0, value: 900 },
+	{ id: 'fruit_f_3', name: 'Frosted Berry', rarity: 'festive', weight: 0, value: 850 },
 	{ id: 'fruit_g_1', name: 'Omnifruit', rarity: 'godly', weight: 0.00005, value: 100000000 },
 	{ id: 'fruit_et_1', name: 'Eternalfruit', rarity: 'eternal', weight: 0.0000005, value: 500000000 }
 	
@@ -305,7 +311,7 @@ function loadState(){
 					console.info('Save hash mismatch due to schema upgrade; backfilling new fields without reset.');
 					try{ localStorage.setItem(STORAGE_HASH_KEY, recalculated); }catch(e){ console.warn(e); }
 				} else {
-					// Tampered or corrupted — reset to safe defaults
+					// Tampered or corrupted � reset to safe defaults
 					console.warn('Save integrity check failed. Resetting save.');
 					localStorage.setItem('btf_save_tampered', '1');
 					state = {
@@ -404,8 +410,8 @@ function saveState(){
 function weightedPick(items){
 	// Check if luck potion is active
 	const potionActive = state.potionActive && state.potionEndsAt > Date.now();
-	const cappedStacks = Math.min(state.luckStacks, 49); // Caps multiplier at ~99x (1 + 49*2)
-	const multiplier = potionActive ? Math.min(1 + cappedStacks * 2, 100) : 1;
+	const cappedStacks = Math.min(state.luckStacks, 150); // Caps multiplier at ~300x (1 + 150*2)
+	const multiplier = potionActive ? Math.min(1 + cappedStacks * 2, 300) : 1;
 
 	// If current date is past HALLOWEEN_END, exclude spooky items from the pick pool
 	const halloweenStillOn = Date.now() < HALLOWEEN_END;
@@ -653,8 +659,8 @@ function updateUI(){
     // Update luck multiplier
     if(luckMultiplierEl){
         const isActive = state.potionActive && state.potionEndsAt > Date.now();
-        const cappedStacks = Math.min(state.luckStacks, 49);
-        const multiplier = isActive ? Math.min(1 + cappedStacks * 2, 100) : 1;
+        const cappedStacks = Math.min(state.luckStacks, 150);
+        const multiplier = isActive ? Math.min(1 + cappedStacks * 2, 300) : 1;
         luckMultiplierEl.textContent = `${multiplier}x`;
     }
 
@@ -694,7 +700,7 @@ function updateUI(){
 				badge.className = `badge ${p.rarity}`;
 				badge.textContent = p.rarity.toUpperCase();
 				const name = document.createElement('div');
-				name.innerHTML = `<div style="font-weight:700">${p.name}</div><div style="color:var(--muted);font-size:12px">x${count} • Sell: ${p.value}c</div>`;
+				name.innerHTML = `<div style="font-weight:700">${p.name}</div><div style="color:var(--muted);font-size:12px">x${count} � Sell: ${p.value}c</div>`;
 
 				// sell buttons
 				const sell = document.createElement('button');
@@ -752,7 +758,7 @@ function updateUI(){
 			badge.className = `badge ${f.rarity}`;
 			badge.textContent = f.rarity.toUpperCase();
 			const name = document.createElement('div');
-			name.innerHTML = `<div style="font-weight:700">${f.name}</div><div style="color:var(--muted);font-size:12px">x${count} • Sell: ${f.value}c</div>`;
+			name.innerHTML = `<div style="font-weight:700">${f.name}</div><div style="color:var(--muted);font-size:12px">x${count} � Sell: ${f.value}c</div>`;
 			const sell = document.createElement('button');
 			sell.className = 'sell-btn small';
 			sell.textContent = 'Sell x1';
@@ -795,34 +801,36 @@ function animateRoll(makeItemsCallback, revealCallback){
 		// clear current area
 		if(revealCallback === showResults) resultArea.innerHTML = '';
 		if(revealCallback === showCapsuleResults) capsuleResultArea.innerHTML = '';
+		
 		items.forEach((it, idx)=>{
 			setTimeout(()=>{
 				// create a minimal card for animation then pass to reveal callback
 				const card = document.createElement('div');
-				card.className = `result-card rarity-${it.rarity} pop`;
+				card.className = `result-card rarity-${it.rarity}`;
 				// only apply Benny glow on pet reveals (showResults), not capsule/fruit reveals
 				if(revealCallback === showResults && state.bennyActive && state.bennyEndsAt > Date.now()){
 					card.classList.add('benny-glow');
 				}
 				const ic = document.createElement('div'); ic.style.fontSize='28px';
 		// placeholder icons reused from showResults
-		if(it.rarity==='godly'){ ic.textContent='⚡'; card.classList.add('godly'); }
-		else if(it.rarity==='eternal'){ ic.textContent='💎'; card.classList.add('eternal'); }
-		else if(it.rarity==='spooky'){ ic.textContent='🎃'; card.classList.add('spooky'); }
-		else if(it.rarity==='festive'){ ic.textContent='🎄'; card.classList.add('festive'); }
-		else if(it.rarity==='unique'){ ic.textContent='👑'; card.classList.add('unique'); }
-		else if(it.rarity==='epic'){ ic.textContent='✨'; card.classList.add('epic'); }
-		else if(it.rarity==='special'){ ic.textContent='👁️'; card.classList.add('special'); }
-		else if(it.rarity==='chromatic'){ ic.textContent='🌈'; card.classList.add('chromatic'); }
-		else if(it.rarity==='legendary'){ ic.textContent='🔱'; }
-		else if(it.rarity==='rare'){ ic.textContent='⭐'; }
-		else { ic.textContent='●'; }
+		if(it.rarity==='godly'){ ic.textContent='?'; card.classList.add('godly'); }
+		else if(it.rarity==='eternal'){ ic.textContent='??'; card.classList.add('eternal'); }
+		else if(it.rarity==='spooky'){ ic.textContent='??'; card.classList.add('spooky'); }
+		else if(it.rarity==='festive'){ ic.textContent='??'; card.classList.add('festive'); }
+		else if(it.rarity==='unique'){ ic.textContent='??'; card.classList.add('unique'); }
+		else if(it.rarity==='epic'){ ic.textContent='?'; card.classList.add('epic'); }
+		else if(it.rarity==='special'){ ic.textContent='???'; card.classList.add('special'); }
+		else if(it.rarity==='chromatic'){ ic.textContent='??'; card.classList.add('chromatic'); }
+		else if(it.rarity==='legendary'){ ic.textContent='??'; }
+		else if(it.rarity==='rare'){ ic.textContent='?'; }
+		else { ic.textContent='?'; }
 				const nm = document.createElement('div'); nm.className='pet-name'; nm.textContent = it.name;
 				card.appendChild(ic); card.appendChild(nm);
 				if(revealCallback === showResults) resultArea.appendChild(card);
 				if(revealCallback === showCapsuleResults) capsuleResultArea.appendChild(card);
-				// small glow
-				setTimeout(()=>{ card.classList.add('reveal-glow'); }, 80);
+				// Trigger pop animation
+				card.classList.add('pop');
+				card.classList.add('reveal-glow');
 			}, idx*revealDelay);
 		});
 
@@ -1069,17 +1077,17 @@ async function showResults(items){
 		const ic = document.createElement('div');
 		ic.style.fontSize = '28px';
 		// placeholder icons reused from showResults
-		if(it.rarity==='godly'){ ic.textContent='⚡'; card.classList.add('godly'); }
-		else if(it.rarity==='eternal'){ ic.textContent='💎'; card.classList.add('eternal'); }
-		else if(it.rarity==='chromatic'){ ic.textContent='🌈'; card.classList.add('chromatic'); }
-		else if(it.rarity==='spooky'){ ic.textContent='🎃'; card.classList.add('spooky'); }
-		else if(it.rarity==='festive'){ ic.textContent='🎄'; card.classList.add('festive'); }
-		else if(it.rarity==='unique'){ ic.textContent='👑'; card.classList.add('unique'); }
-		else if(it.rarity==='epic'){ ic.textContent='✨'; card.classList.add('epic'); }
-		else if(it.rarity==='special'){ ic.textContent='👁️'; card.classList.add('special'); }
-		else if(it.rarity==='legendary'){ ic.textContent='🔱'; }
-		else if(it.rarity==='rare'){ ic.textContent='⭐'; }
-		else { ic.textContent='●'; }
+		if(it.rarity==='godly'){ ic.textContent='?'; card.classList.add('godly'); }
+		else if(it.rarity==='eternal'){ ic.textContent='??'; card.classList.add('eternal'); }
+		else if(it.rarity==='chromatic'){ ic.textContent='??'; card.classList.add('chromatic'); }
+		else if(it.rarity==='spooky'){ ic.textContent='??'; card.classList.add('spooky'); }
+		else if(it.rarity==='festive'){ ic.textContent='??'; card.classList.add('festive'); }
+		else if(it.rarity==='unique'){ ic.textContent='??'; card.classList.add('unique'); }
+		else if(it.rarity==='epic'){ ic.textContent='?'; card.classList.add('epic'); }
+		else if(it.rarity==='special'){ ic.textContent='???'; card.classList.add('special'); }
+		else if(it.rarity==='legendary'){ ic.textContent='??'; }
+		else if(it.rarity==='rare'){ ic.textContent='?'; }
+		else { ic.textContent='?'; }
 			const el = document.createElement('div');
 			el.className = 'inventory-item';
 		// add to inventory if space; otherwise mark discarded
@@ -1093,7 +1101,7 @@ async function showResults(items){
 	saveState();
 	updateUI();
 	if(discarded>0){
-		await showAlert(`Inventory full — ${discarded} item(s) were not added. Sell pets to free space or buy BTF+ for an inventory size of 50.`);
+		await showAlert(`Inventory full � ${discarded} item(s) were not added. Sell pets to free space or buy BTF+ for an inventory size of 50.`);
 	}
 }
 
@@ -1106,35 +1114,35 @@ function showCapsuleResults(items){
 		ic.style.fontSize = '28px';
 		// icon mapping for fruits
 		if(it.rarity==='godly'){
-			ic.textContent = '⚡';
+			ic.textContent = '?';
 			card.classList.add('godly');
 		}
 		else if(it.rarity==='eternal'){
-			ic.textContent = '💎';
+			ic.textContent = '??';
 			card.classList.add('eternal');
 		}
 		else if(it.rarity==='chromatic'){
-			ic.textContent = '🌈';
+			ic.textContent = '??';
 			card.classList.add('chromatic');
 		}else if(it.rarity==='spooky'){
-			ic.textContent = '🎃';
+			ic.textContent = '??';
 			card.classList.add('spooky');
 
 		}else if(it.rarity==='festive'){
-			ic.textContent = '🎄';
+			ic.textContent = '??';
 			card.classList.add('festive');
 		}else if(it.rarity==='unique'){
-			ic.textContent = '👑';
+			ic.textContent = '??';
 			card.classList.add('unique');
 		}else if(it.rarity==='epic'){
-			ic.textContent = '✨';
+			ic.textContent = '?';
 			card.classList.add('epic');
 		}else if(it.rarity==='legendary'){
-			ic.textContent = '🔱';
+			ic.textContent = '??';
 		}else if(it.rarity==='rare'){
-			ic.textContent = '⭐';
+			ic.textContent = '?';
 		}else{
-			ic.textContent = '●';
+			ic.textContent = '?';
 		}
 		const nm = document.createElement('div');
 		nm.className = 'pet-name';
@@ -1313,7 +1321,7 @@ function showSellPetSelector(petId){
 				const ench = ENCHANTMENTS.find(e => e.id === eid);
 				return ench ? ench.name : eid;
 			}).join(', ');
-			enchantText = `<div style="font-size:12px;color:#a855f7;margin-top:4px">💎 ${enchantNames}</div>`;
+			enchantText = `<div style="font-size:12px;color:#a855f7;margin-top:4px">?? ${enchantNames}</div>`;
 		}
 		
 		item.innerHTML = `
@@ -1322,7 +1330,7 @@ function showSellPetSelector(petId){
 				<div class="badge ${p.rarity}" style="font-size:10px;padding:3px 8px">${p.rarity.toUpperCase()}</div>
 			</div>
 			<div style="font-size:13px;color:var(--muted);margin-bottom:4px">
-				${enchants.length} enchantment${enchants.length !== 1 ? 's' : ''} • ${cps} CPS • Sell: ${p.value}c
+				${enchants.length} enchantment${enchants.length !== 1 ? 's' : ''} � ${cps} CPS � Sell: ${p.value}c
 			</div>
 			${enchantText}
 		`;
@@ -1381,7 +1389,7 @@ function showPetSelector(petId, count){
 				const ench = ENCHANTMENTS.find(e => e.id === eid);
 				return ench ? ench.name : eid;
 			}).join(', ');
-			enchantText = `<div style="font-size:12px;color:#a855f7;margin-top:4px">💎 ${enchantNames}</div>`;
+			enchantText = `<div style="font-size:12px;color:#a855f7;margin-top:4px">?? ${enchantNames}</div>`;
 		}
 		
 		item.innerHTML = `
@@ -2147,7 +2155,7 @@ if (document.getElementById('buyLuckPotion')) {
 				state.bennyActive = true;
 				state.bennyEndsAt = Date.now() + BENNY_DURATION;
 				if(!state.purchasedItems.some(i=>i.name==='Benny Boost')){
-					state.purchasedItems.push({ name: 'Happy Powder', icon: '😃', description: '+5% CPS for 5 minutes' });
+					state.purchasedItems.push({ name: 'Happy Powder', icon: '??', description: '+5% CPS for 5 minutes' });
 				}
 				saveState();
 				updateShopUI();
@@ -2163,7 +2171,7 @@ if (document.getElementById('buyLuckPotion')) {
 				state.coins -= SLOT_MACHINE_COST;
 				state.bonusInventorySlots = SLOT_MACHINE_BONUS;
 				if(!state.purchasedItems.some(i=>i.name==='Slot Machine')){
-					state.purchasedItems.push({ name: 'Slot Machine', icon: '🎰', description: `Adds +5 pet inventory slots permanently` });
+					state.purchasedItems.push({ name: 'Slot Machine', icon: '??', description: `Adds +5 pet inventory slots permanently` });
 				}
 				saveState();
 				updateShopUI();
@@ -2182,10 +2190,10 @@ if (document.getElementById('buyLuckPotion')) {
 				const result = redeemGiftCode(code);
 				if(result.success){
 					updateShopUI();
-					await showAlert('✅ ' + result.message);
+					await showAlert('? ' + result.message);
 					giftCodeInput.value = '';
 				} else {
-					await showAlert('❌ ' + result.message);
+					await showAlert('? ' + result.message);
 				}
 			}
 		});
@@ -2251,7 +2259,7 @@ if (document.getElementById('brewedPotions')) {
 			const effectEl = document.createElement('div');
 			effectEl.className = 'item-card';
 			effectEl.innerHTML = `
-				<div class="item-icon">🧪</div>
+				<div class="item-icon">??</div>
 				<div class="item-info">
 					<h3>Luck Potion</h3>
 					<p class="effect-active">Active - ${minutes}:${seconds.toString().padStart(2, '0')} remaining</p>
@@ -2274,7 +2282,7 @@ if (document.getElementById('brewedPotions')) {
 					potionEl.className = 'item-card';
 					potionEl.style.position = 'relative';
 					potionEl.innerHTML = `
-						<div class="item-icon">🧪</div>
+						<div class="item-icon">??</div>
 						<div class="item-info">
 							<h3>${potion.name}</h3>
 							<p style="color:#10b981">+${potion.potency} luck stacks</p>
@@ -2305,11 +2313,11 @@ if (document.getElementById('brewedPotions')) {
 					itemEl.className = 'item-card';
 					itemEl.style.cursor = 'pointer';
 					itemEl.innerHTML = `
-						<div class="item-icon">🐾</div>
+						<div class="item-icon">??</div>
 						<div class="item-info">
 							<h3>${pet.name}</h3>
 							<p style="color:var(--${pet.rarity})">${pet.rarity.toUpperCase()}</p>
-							<p style="font-size:11px;margin-top:4px">${enchants.length} enchantment${enchants.length !== 1 ? 's' : ''} • Click to view</p>
+							<p style="font-size:11px;margin-top:4px">${enchants.length} enchantment${enchants.length !== 1 ? 's' : ''} � Click to view</p>
 						</div>
 					`;
 					itemEl.addEventListener('click', () => showPetDetail(petKey, petId));

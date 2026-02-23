@@ -20,7 +20,7 @@
 	--unique: #00bfff;
 	--godly: #ffd700;
 	--festive: #c41e3a;
-	--eternal: #d4af37;
+	--eternal: #10b981;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;width:100%}
@@ -204,7 +204,7 @@ button.muted{background:var(--card);color:var(--text-secondary);border:1px solid
 button.muted:hover{background:var(--card-hover);color:var(--text)}
 
 .result-area{margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;min-height:100px}
-.result-card{width:110px;height:130px;border-radius:12px;background:var(--card-hover);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;border:1px solid var(--border);transition:all 0.2s ease}
+.result-card{width:110px;height:130px;border-radius:12px;background:var(--card-hover);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;border:1px solid var(--border);opacity:0;transform:scale(0)}
 .result-card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,0.3)}
 .rarity-common{border-color:rgba(255,255,255,0.02)}
 .rarity-rare{border-color:#3b82f6;box-shadow:0 6px 18px rgba(59,130,246,0.12)}
@@ -251,12 +251,12 @@ button.muted:hover{background:var(--card-hover);color:var(--text)}
 
 .rarity-unique{ border-color:#00bfff; box-shadow: 0 0 20px rgba(0,191,255,0.8), 0 0 40px rgba(77,208,255,0.5), 0 0 60px rgba(41,82,163,0.3); position:relative; overflow:hidden; animation:uniqueGlow 2s ease-in-out infinite }
 
-.rarity-eternal{ border-color:#d4af37; box-shadow: 0 0 25px rgba(212, 175, 55, 0.9), 0 0 50px rgba(251, 191, 36, 0.6), 0 0 75px rgba(212, 175, 55, 0.4), 0 0 100px rgba(30, 58, 138, 0.3); position:relative; overflow:hidden; animation:eternalGlow 2.5s ease-in-out infinite }
+.rarity-eternal{ border-color:#10b981; box-shadow: 0 0 25px rgba(16, 185, 129, 0.9), 0 0 50px rgba(5, 150, 105, 0.6), 0 0 75px rgba(4, 120, 87, 0.4), 0 0 100px rgba(52, 211, 153, 0.3); position:relative; overflow:hidden; animation:eternalGlow 2.5s ease-in-out infinite }
 
 @keyframes eternalGlow{
-	0%{ box-shadow: 0 0 25px rgba(212, 175, 55, 0.6), 0 0 50px rgba(251, 191, 36, 0.3), 0 0 75px rgba(212, 175, 55, 0.2); }
-	50%{ box-shadow: 0 0 35px rgba(212, 175, 55, 1), 0 0 70px rgba(251, 191, 36, 0.8), 0 0 100px rgba(30, 58, 138, 0.5), 0 0 130px rgba(212, 175, 55, 0.3); }
-	100%{ box-shadow: 0 0 25px rgba(212, 175, 55, 0.6), 0 0 50px rgba(251, 191, 36, 0.3), 0 0 75px rgba(212, 175, 55, 0.2); }
+	0%{ box-shadow: 0 0 25px rgba(16, 185, 129, 0.6), 0 0 50px rgba(5, 150, 105, 0.3), 0 0 75px rgba(4, 120, 87, 0.2); }
+	50%{ box-shadow: 0 0 35px rgba(16, 185, 129, 1), 0 0 70px rgba(5, 150, 105, 0.8), 0 0 100px rgba(52, 211, 153, 0.5), 0 0 130px rgba(16, 185, 129, 0.3); }
+	100%{ box-shadow: 0 0 25px rgba(16, 185, 129, 0.6), 0 0 50px rgba(5, 150, 105, 0.3), 0 0 75px rgba(4, 120, 87, 0.2); }
 }
 
 .inventory-item.spooky{ position: relative; overflow: hidden; }
@@ -397,7 +397,7 @@ button.muted:hover{background:var(--card-hover);color:var(--text)}
 }
 
 .result-card.godly{ position: relative; overflow: hidden; will-change: transform, filter; }
-.result-card.eternal{ position: relative; overflow: hidden; will-change: transform, filter; background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(251, 191, 36, 0.05)); }
+.result-card.eternal{ position: relative; overflow: hidden; will-change: transform, filter; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05)); }
 .result-card.eternal::after{
 	content: '';
 	position: absolute;
@@ -405,7 +405,7 @@ button.muted:hover{background:var(--card-hover);color:var(--text)}
 	left: -50%;
 	width: 200%;
 	height: 200%;
-	background: linear-gradient(45deg, transparent 30%, rgba(212, 175, 55, 0.1) 50%, transparent 70%);
+	background: linear-gradient(45deg, transparent 30%, rgba(16, 185, 129, 0.12) 50%, transparent 70%);
 	animation: eternalShift 3s linear infinite;
 	pointer-events: none;
 }
@@ -520,11 +520,11 @@ button.muted:hover{background:var(--card-hover);color:var(--text)}
 }
 
 @keyframes eternalShift{
-	0%{ background-position: 0% 50%; filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.4)); }
-	25%{ background-position: 50% 50%; filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.6)); }
-	50%{ background-position: 100% 50%; filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.8)); }
-	75%{ background-position: 50% 50%; filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.6)); }
-	100%{ background-position: 0% 50%; filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.4)); }
+	0%{ background-position: 0% 50%; filter: drop-shadow(0 0 10px rgba(55, 212, 68, 0.4)); }
+	25%{ background-position: 50% 50%; filter: drop-shadow(0 0 20px rgba(36, 251, 197, 0.6)); }
+	50%{ background-position: 100% 50%; filter: drop-shadow(0 0 30px rgba(55, 207, 212, 0.8)); }
+	75%{ background-position: 50% 50%; filter: drop-shadow(0 0 20px rgba(36, 251, 240, 0.6)); }
+	100%{ background-position: 0% 50%; filter: drop-shadow(0 0 10px rgba(55, 167, 212, 0.4)); }
 }
 
 footer{padding:32px 0;text-align:center;color:var(--text-secondary);border-top:1px solid var(--border);margin-top:48px}
@@ -638,7 +638,7 @@ footer{padding:32px 0;text-align:center;color:var(--text-secondary);border-top:1
 
 /* Roll animations */
 @keyframes btnPulse{ 0%{ transform:scale(1) } 50%{ transform:scale(1.04) } 100%{ transform:scale(1) } }
-@keyframes popIn{ 0%{ transform: scale(0.6) rotate(-6deg); opacity:0 } 60%{ transform: scale(1.05) rotate(4deg); opacity:1 } 100%{ transform: scale(1) rotate(0) } }
+@keyframes popIn{ 0%{ transform: scale(0) rotate(-10deg); opacity:0 } 50%{ transform: scale(1.08) rotate(3deg); opacity:1 } 100%{ transform: scale(1) rotate(0) } }
 @keyframes revealGlow{ 0%{ box-shadow:0 0 0 rgba(255,255,255,0) } 50%{ box-shadow:0 16px 40px rgba(124,58,237,0.14) } 100%{ box-shadow:0 0 0 rgba(255,255,255,0) } }
 
 @keyframes uniqueGlow{
@@ -657,12 +657,12 @@ footer{padding:32px 0;text-align:center;color:var(--text-secondary);border-top:1
 
 .controls button.anim-pulse{ animation: btnPulse 420ms ease-in-out }
 .result-area.animating{ pointer-events:none; opacity:0.6 }
-.result-card.pop{ animation: popIn 420ms cubic-bezier(.2,.8,.2,1); transform-origin:center; }
-.result-card.chromatic.pop{ animation: popIn 520ms cubic-bezier(.2,.9,.2,1), chromaShift 3s linear infinite }
-.result-card.godly.pop{ animation: godlyReveal 1.5s linear both, godlyShift 4s linear infinite; transform-origin:center; }
-.result-card.unique.pop{ animation: uniqueReveal 1.2s cubic-bezier(.2,.9,.2,1); transform-origin:center; }
-.result-card.eternal.pop{ animation: eternalReveal 1.8s cubic-bezier(.2,.9,.2,1); transform-origin:center; }
-.result-card.reveal-glow{ animation: revealGlow 700ms ease-in-out }
+.result-card.pop{ animation: popIn 400ms cubic-bezier(.34,.1,.68,.55) forwards; transform-origin:center; }
+.result-card.chromatic.pop{ animation: popIn 400ms cubic-bezier(.34,.1,.68,.55) forwards, chromaShift 3s linear infinite }
+.result-card.godly.pop{ animation: popIn 400ms cubic-bezier(.34,.1,.68,.55) forwards, godlyShift 4s linear infinite; transform-origin:center; }
+.result-card.unique.pop{ animation: popIn 400ms cubic-bezier(.34,.1,.68,.55) forwards; transform-origin:center; }
+.result-card.eternal.pop{ animation: popIn 400ms cubic-bezier(.34,.1,.68,.55) forwards, eternalShift 3s linear infinite; transform-origin:center; }
+.result-card.reveal-glow{ animation: revealGlow 700ms ease-in-out forwards }
 
 /* Benny Boost glow for pets (result cards and inventory items) */
 .result-card.benny-glow, .inventory-item.benny-glow{
@@ -713,3 +713,45 @@ footer{padding:32px 0;text-align:center;color:var(--text-secondary);border-top:1
 }
 
 
+.claim-popup {
+display: none;
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background: rgba(0, 0, 0, 0.7);
+z-index: 9999;
+align-items: center;
+justify-content: center;
+pointer-events: auto;
+}
+
+.claim-popup-content {
+background: var(--card);
+border: 1px solid var(--border);
+border-radius: 10px;
+padding: 24px;
+box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+display: flex;
+flex-direction: column;
+gap: 12px;
+max-width: 400px;
+width: 90%;
+pointer-events: auto;
+}
+
+.claim-popup-content label {
+font-weight: 600;
+color: var(--text);
+margin-bottom: 4px;
+}
+
+.claim-popup-content input {
+pointer-events: auto;
+}
+
+.claim-popup-content button {
+pointer-events: auto;
+cursor: pointer;
+}

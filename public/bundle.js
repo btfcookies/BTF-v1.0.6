@@ -482,6 +482,10 @@ const closePetDetail = document.getElementById('closePetDetail');
 const petDetailName = document.getElementById('petDetailName');
 const enchantList = document.getElementById('enchantList');
 
+// Shared luck tuning
+const luckStackBonus = window.LUCK_STACK_BONUS || 1.2;
+const formatLuck = window.formatLuckMultiplier || ((val)=> Number.isInteger(val) ? val : Number(val.toFixed(1)));
+
 // Load state
 function loadState() {
     try {
@@ -545,9 +549,9 @@ function updateUI() {
     
     // Update luck multiplier
     if(luckMultiplierEl){
-        const isActive = window.state.potionActive && window.state.potionEndsAt > Date.now();
-        const cappedStacks = Math.min(window.state.luckStacks, 100);
-        luckMultiplierEl.textContent = isActive ? `${1 + cappedStacks * 2}x` : "1x";
+        const { multiplier } = window.getLuckInfo ? window.getLuckInfo() : { multiplier: 1 };
+        const displayMult = formatLuck(multiplier);
+        luckMultiplierEl.textContent = `${displayMult}x`;
     }
     
     // Update active effects
@@ -556,16 +560,16 @@ function updateUI() {
         const remaining = Math.ceil((window.state.potionEndsAt - Date.now()) / 1000);
         const minutes = Math.floor(remaining / 60);
         const seconds = remaining % 60;
-        const cappedStacks = Math.min(window.state.luckStacks, 100);
-        
-        const effectEl = document.createElement('div');
-        effectEl.className = 'item-card';
-        effectEl.innerHTML = `
+		const { cappedStacks } = window.getLuckInfo ? window.getLuckInfo() : { cappedStacks: Math.min(window.state.luckStacks || 0, window.LUCK_STACK_CAP || 49) };
+		
+		const effectEl = document.createElement('div');
+		effectEl.className = 'item-card';
+		effectEl.innerHTML = `
             <div class="item-icon">🧪</div>
             <div class="item-info">
                 <h3>Luck Potion</h3>
                 <p class="effect-active">Active - ${minutes}:${seconds.toString().padStart(2, '0')} remaining</p>
-                <p>+${cappedStacks * 2}x luck boost (${cappedStacks} stack${cappedStacks !== 1 ? 's' : ''})</p>
+                <p>+${formatLuck(cappedStacks * luckStackBonus)}x luck boost (${cappedStacks} stack${cappedStacks !== 1 ? 's' : ''})</p>
             </div>
         `;
         activeEffectsEl.appendChild(effectEl);
@@ -765,7 +769,10 @@ const PETS = [
 	{ id: 'pet_l_1', name: 'Infinity Golem', rarity: 'legendary', weight: 0.5, value: 1200 },
 	{ id: 'pet_s_1', name: 'Nightmare Skeleton', rarity: 'spooky', weight: 0.3, value: 2500 },
 	{ id: 'pet_ch_1', name: 'Chroma Beast', rarity: 'chromatic', weight: 0.25, value: 5000 },
-	{ id: 'pet_s_2', name: 'Spooky Ghost', rarity: 'spooky', weight: 0.3, value: 2200 }
+	{ id: 'pet_s_2', name: 'Spooky Ghost', rarity: 'spooky', weight: 0.3, value: 2200 },
+	{ id: 'pet_f_1', name: 'Festive Reindeer', rarity: 'festive', weight: 0, value: 3000 },
+	{ id: 'pet_f_2', name: 'Frostfire Wolf', rarity: 'festive', weight: 0, value: 2800 },
+	{ id: 'pet_f_3', name: 'Snowflake Sprite', rarity: 'festive', weight: 0, value: 2600 }
 ];
 
 const FRUITS = [
@@ -778,6 +785,9 @@ const FRUITS = [
 	{ id: 'fruit_u_2', name: 'Stellar Pomegranate', rarity: 'unique', weight: 0.04, value: 6000 },
 	{ id: 'fruit_l_1', name: 'Cosmic Shard', rarity: 'legendary', weight: 0.8, value: 450 },
 	{ id: 'fruit_s_1', name: 'Cursed Pumpkin', rarity: 'spooky', weight: 0.4, value: 600 },
+	{ id: 'fruit_f_1', name: 'Candy Cane', rarity: 'festive', weight: 0, value: 1000 },
+	{ id: 'fruit_f_2', name: 'Gingerbread Cookie', rarity: 'festive', weight: 0, value: 900 },
+	{ id: 'fruit_f_3', name: 'Frosted Berry', rarity: 'festive', weight: 0, value: 850 },
 	{ id: 'fruit_ch_1', name: 'Prism Crystal', rarity: 'chromatic', weight: 0.3, value: 1200 }
 ];
 
@@ -788,6 +798,7 @@ const RARITY_CPS = {
 	epic: 8,
 	special: 12,
 	legendary: 20,
+	festive: 30,
 	spooky: 30,
 	chromatic: 80,
 	unique: 60,
@@ -1128,8 +1139,11 @@ const blessingTimerEl = document.getElementById('blessingTimer');
 const buySlotMachineBtn = document.getElementById('buySlotMachine');
 const slotsPurchasedEl = document.getElementById('slotsPurchased');
 const buyThanksgivingPotion = document.getElementById('buyThanksgivingPotion');
-let btf_plus = false;
-
+const claimBTFPlusBtn = document.getElementById('claimBTFPlus');
+const claimPopUp = document.querySelector('.claim-popup');
+const closeClaimPopUpBtn = document.getElementById('close-claim-popup');
+const claimOrderBtn = document.getElementById('claim-order-btn');
+const orderNumberInput = document.getElementById('order-number');
 // Brewing UI
 const tearsDisplayEl = document.getElementById('tearsDisplay');
 const brewFruitListEl = document.getElementById('brewFruitList');
@@ -1140,6 +1154,10 @@ const brewPotionBtn = document.getElementById('brewPotionBtn');
 // Ensure we have local references to common header elements (may not rely on globals)
 const coinsEl = document.getElementById('coins');
 const luckMultiplierEl = document.getElementById('luckMultiplier');
+
+// Shared luck tuning
+const luckStackBonus = window.LUCK_STACK_BONUS || 1.2;
+const formatLuck = window.formatLuckMultiplier || ((val)=> Number.isInteger(val) ? val : Number(val.toFixed(1)));
 
 // State is now defined in index.js - use the global state
 // Local state object removed to avoid duplicate declaration
@@ -1168,6 +1186,7 @@ function loadState() {
             window.state.fruits = parsed.fruits ?? (window.state.fruits || {});
             window.state.tears = parsed.tears ?? 0;
             window.state.potionInventory = parsed.potionInventory ?? [];
+            window.state.btfPlusClaimed = parsed.btfPlusClaimed ?? false;
         }
     } catch (e) { console.warn('load failed', e) }
     updateUI();
@@ -1176,6 +1195,9 @@ function loadState() {
 
 // saveState() is now provided by index.js with hash integrity
 
+const orderNumbers = [
+    {code: '1000000', item: 'BTF Plus'}
+]
 // Update UI
 function updateUI() {
     if(coinsEl){ coinsEl.textContent = window.state.coins; }
@@ -1183,9 +1205,9 @@ function updateUI() {
     
     // Update luck multiplier
     if(luckMultiplierEl){
-        const isActive = window.state.potionActive && window.state.potionEndsAt > Date.now();
-        const cappedStacks = Math.min(window.state.luckStacks, 100);
-        luckMultiplierEl.textContent = isActive ? `${1 + cappedStacks * 2}x` : "1x";
+        const { multiplier } = window.getLuckInfo ? window.getLuckInfo() : { multiplier: 1 };
+        const displayMult = formatLuck(multiplier);
+        luckMultiplierEl.textContent = `${displayMult}x`;
     }
     // Benny UI
     if(bennyTimerEl){
@@ -1423,7 +1445,7 @@ buyBtn.addEventListener('click', () => {
             window.state.purchasedItems.push({
                 name: 'Potion of Luck',
                 icon: '',
-                description: 'Makes all items 3x more common for 5 minutes'
+                    description: 'Makes all items about 2x more common for 5 minutes'
             });
         }
         if(typeof window.saveState === 'function') window.saveState();
@@ -1561,7 +1583,59 @@ if(redeemGiftCodeBtn && giftCodeInput){
             redeemGiftCodeBtn.click();
         }
     });
+
+
 }
+
+    if(claimBTFPlusBtn){
+        claimBTFPlusBtn.addEventListener('click', ()=>{
+            claimPopUp.style.display = 'flex'; 
+        });
+    }
+
+    if(closeClaimPopUpBtn){
+        closeClaimPopUpBtn.addEventListener('click', ()=>{
+            claimPopUp.style.display = 'none'; 
+        });
+    }
+
+    if(claimOrderBtn){
+        claimOrderBtn.addEventListener('click', async ()=>{
+            const enteredCode = orderNumberInput.value.trim();
+            const order = orderNumbers.find(o => o.code === enteredCode);
+            if(order){
+                if(order.item === 'BTF Plus'){
+                    if (window.state.btfPlusClaimed) {
+                        if(typeof showAlert === 'function'){
+                            await showAlert('You already have BTF+.');
+                        } else {
+                            alert('You already have BTF+.');
+                        }
+                    } else {
+                        window.state.btfPlusClaimed = true;
+                        if(typeof window.saveState === 'function'){
+                            window.saveState();
+                        }
+                        if(typeof showAlert === 'function'){
+                            await showAlert('BTF+ claimed successfully! Enjoy your perks.');
+                            console.log('BTF+ claimed successfully');
+                        } else {
+                            alert('BTF+ claimed successfully! Enjoy your perks.');
+                            console.log('BTF+ claimed successfully');
+                            
+                        }
+                        claimPopUp.style.display = 'none';
+                    }
+                }
+            } else {
+                if(typeof showAlert === 'function'){
+                    await showAlert('Invalid order number.');
+                } else {
+                    alert('Invalid order number.');
+                }
+            }
+        });
+    }
 
 // Check timer every second
 setInterval(updateUI, 1000);
@@ -2641,6 +2715,9 @@ const PETS = [
 	{ id: 'pet_s_1', name: 'Nightmare Skeleton', rarity: 'spooky', weight: 0.3, value: 2500 },
 	{ id: 'pet_ch_1', name: 'Chroma Beast', rarity: 'chromatic', weight: 0.025, value: 5000 },
 	{ id: 'pet_s_2', name: 'Spooky Ghost', rarity: 'spooky', weight: 0.3, value: 2200 },
+	{ id: 'pet_f_1', name: 'Festive Reindeer', rarity: 'festive', weight: 0, value: 3000 },
+	{ id: 'pet_f_2', name: 'Frostfire Wolf', rarity: 'festive', weight: 0, value: 2800 },
+	{ id: 'pet_f_3', name: 'Snowflake Sprite', rarity: 'festive', weight: 0, value: 2600 },
 	{ id: 'pet_u_3', name: 'Max Verstappen', rarity: 'unique', weight: 0.0005, value: 10000000 },
 	{ id: 'pet_g_1', name: 'Celestial Archon', rarity: 'godly', weight: 0.00005, value: 50000000 },
 	{ id: 'pet_et_1', name: 'Sneaky Golem', rarity: 'eternal', weight: 0.0000005, value: 100000000 }
@@ -2698,6 +2775,9 @@ const FRUITS = [
 	{ id: 'fruit_u_1', name: 'Aurora Berry', rarity: 'unique', weight: 0.0005, value: 60000000 },
 	{ id: 'fruit_u_2', name: 'Cookiefruit', rarity: 'unique', weight: 0.0005, value: 60000000 },
 	{ id: 'fruit_s_1', name: 'Cursed Pumpkin', rarity: 'spooky', weight: 0.3, value: 800 },
+	{ id: 'fruit_f_1', name: 'Candy Cane', rarity: 'festive', weight: 0, value: 1000 },
+	{ id: 'fruit_f_2', name: 'Gingerbread Cookie', rarity: 'festive', weight: 0, value: 900 },
+	{ id: 'fruit_f_3', name: 'Frosted Berry', rarity: 'festive', weight: 0, value: 850 },
 	{ id: 'fruit_g_1', name: 'Omnifruit', rarity: 'godly', weight: 0.00005, value: 100000000 },
 	{ id: 'fruit_et_1', name: 'Eternalfruit', rarity: 'eternal', weight: 0.0000005, value: 500000000 }
 	
@@ -3354,11 +3434,12 @@ function animateRoll(makeItemsCallback, revealCallback){
 		// clear current area
 		if(revealCallback === showResults) resultArea.innerHTML = '';
 		if(revealCallback === showCapsuleResults) capsuleResultArea.innerHTML = '';
+		
 		items.forEach((it, idx)=>{
 			setTimeout(()=>{
 				// create a minimal card for animation then pass to reveal callback
 				const card = document.createElement('div');
-				card.className = `result-card rarity-${it.rarity} pop`;
+				card.className = `result-card rarity-${it.rarity}`;
 				// only apply Benny glow on pet reveals (showResults), not capsule/fruit reveals
 				if(revealCallback === showResults && state.bennyActive && state.bennyEndsAt > Date.now()){
 					card.classList.add('benny-glow');
@@ -3380,8 +3461,9 @@ function animateRoll(makeItemsCallback, revealCallback){
 				card.appendChild(ic); card.appendChild(nm);
 				if(revealCallback === showResults) resultArea.appendChild(card);
 				if(revealCallback === showCapsuleResults) capsuleResultArea.appendChild(card);
-				// small glow
-				setTimeout(()=>{ card.classList.add('reveal-glow'); }, 80);
+				// Trigger pop animation
+				card.classList.add('pop');
+				card.classList.add('reveal-glow');
 			}, idx*revealDelay);
 		});
 

@@ -29,8 +29,11 @@ const blessingTimerEl = document.getElementById('blessingTimer');
 const buySlotMachineBtn = document.getElementById('buySlotMachine');
 const slotsPurchasedEl = document.getElementById('slotsPurchased');
 const buyThanksgivingPotion = document.getElementById('buyThanksgivingPotion');
-let btf_plus = false;
-
+const claimBTFPlusBtn = document.getElementById('claimBTFPlus');
+const claimPopUp = document.querySelector('.claim-popup');
+const closeClaimPopUpBtn = document.getElementById('close-claim-popup');
+const claimOrderBtn = document.getElementById('claim-order-btn');
+const orderNumberInput = document.getElementById('order-number');
 // Brewing UI
 const tearsDisplayEl = document.getElementById('tearsDisplay');
 const brewFruitListEl = document.getElementById('brewFruitList');
@@ -41,6 +44,10 @@ const brewPotionBtn = document.getElementById('brewPotionBtn');
 // Ensure we have local references to common header elements (may not rely on globals)
 const coinsEl = document.getElementById('coins');
 const luckMultiplierEl = document.getElementById('luckMultiplier');
+
+// Shared luck tuning
+const luckStackBonus = window.LUCK_STACK_BONUS || 1.2;
+const formatLuck = window.formatLuckMultiplier || ((val)=> Number.isInteger(val) ? val : Number(val.toFixed(1)));
 
 // State is now defined in index.js - use the global state
 // Local state object removed to avoid duplicate declaration
@@ -69,6 +76,7 @@ function loadState() {
             window.state.fruits = parsed.fruits ?? (window.state.fruits || {});
             window.state.tears = parsed.tears ?? 0;
             window.state.potionInventory = parsed.potionInventory ?? [];
+            window.state.btfPlusClaimed = parsed.btfPlusClaimed ?? false;
         }
     } catch (e) { console.warn('load failed', e) }
     updateUI();
@@ -77,6 +85,9 @@ function loadState() {
 
 // saveState() is now provided by index.js with hash integrity
 
+const orderNumbers = [
+    {code: '1000000', item: 'BTF Plus'}
+]
 // Update UI
 function updateUI() {
     if(coinsEl){ coinsEl.textContent = window.state.coins; }
@@ -84,9 +95,9 @@ function updateUI() {
     
     // Update luck multiplier
     if(luckMultiplierEl){
-        const isActive = window.state.potionActive && window.state.potionEndsAt > Date.now();
-        const cappedStacks = Math.min(window.state.luckStacks, 100);
-        luckMultiplierEl.textContent = isActive ? `${1 + cappedStacks * 2}x` : "1x";
+        const { multiplier } = window.getLuckInfo ? window.getLuckInfo() : { multiplier: 1 };
+        const displayMult = formatLuck(multiplier);
+        luckMultiplierEl.textContent = `${displayMult}x`;
     }
     // Benny UI
     if(bennyTimerEl){
@@ -310,8 +321,8 @@ buyBtn.addEventListener('click', () => {
         window.state.luckPotionsPurchased += 1;
         
         if (window.state.potionActive && window.state.potionEndsAt > Date.now()) {
-            // Already active: increment stacks (max 49 to cap multiplier at 100x), reset timer
-            window.state.luckStacks = Math.min(window.state.luckStacks + 1, 49);
+            // Already active: increment stacks (max 150 to cap multiplier at 300x), reset timer
+            window.state.luckStacks = Math.min(window.state.luckStacks + 1, 150);
             window.state.potionEndsAt = Date.now() + POTION_DURATION;
         } else {
             // Not active or expired: start new effect
@@ -324,7 +335,7 @@ buyBtn.addEventListener('click', () => {
             window.state.purchasedItems.push({
                 name: 'Potion of Luck',
                 icon: '',
-                description: 'Makes all items 3x more common for 5 minutes'
+                    description: 'Makes all items about 2x more common for 5 minutes'
             });
         }
         if(typeof window.saveState === 'function') window.saveState();
@@ -462,7 +473,59 @@ if(redeemGiftCodeBtn && giftCodeInput){
             redeemGiftCodeBtn.click();
         }
     });
+
+
 }
+
+    if(claimBTFPlusBtn){
+        claimBTFPlusBtn.addEventListener('click', ()=>{
+            claimPopUp.style.display = 'flex'; 
+        });
+    }
+
+    if(closeClaimPopUpBtn){
+        closeClaimPopUpBtn.addEventListener('click', ()=>{
+            claimPopUp.style.display = 'none'; 
+        });
+    }
+
+    if(claimOrderBtn){
+        claimOrderBtn.addEventListener('click', async ()=>{
+            const enteredCode = orderNumberInput.value.trim();
+            const order = orderNumbers.find(o => o.code === enteredCode);
+            if(order){
+                if(order.item === 'BTF Plus'){
+                    if (window.state.btfPlusClaimed) {
+                        if(typeof showAlert === 'function'){
+                            await showAlert('You already have BTF+.');
+                        } else {
+                            alert('You already have BTF+.');
+                        }
+                    } else {
+                        window.state.btfPlusClaimed = true;
+                        if(typeof window.saveState === 'function'){
+                            window.saveState();
+                        }
+                        if(typeof showAlert === 'function'){
+                            await showAlert('BTF+ claimed successfully! Enjoy your perks.');
+                            console.log('BTF+ claimed successfully');
+                        } else {
+                            alert('BTF+ claimed successfully! Enjoy your perks.');
+                            console.log('BTF+ claimed successfully');
+                            
+                        }
+                        claimPopUp.style.display = 'none';
+                    }
+                }
+            } else {
+                if(typeof showAlert === 'function'){
+                    await showAlert('Invalid order number.');
+                } else {
+                    alert('Invalid order number.');
+                }
+            }
+        });
+    }
 
 // Check timer every second
 setInterval(updateUI, 1000);

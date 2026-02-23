@@ -4,13 +4,13 @@ function useBrewedPotion(index){
     const p = inv[index]; 
     if(!p) return;
     
-    // apply effect but do not stack beyond 49 (caps multiplier at ~100x)
+    // apply effect but do not stack beyond 150 (caps multiplier at ~300x)
     if(state.potionActive && state.potionEndsAt > Date.now()){
-        state.luckStacks = Math.min(49, (state.luckStacks||0) + (p.potency||0));
+        state.luckStacks = Math.min(150, (state.luckStacks||0) + (p.potency||0));
         state.potionEndsAt = Date.now() + (p.durationMs||0);
     } else {
         state.potionActive = true;
-        state.luckStacks = Math.min(49, p.potency||0);
+        state.luckStacks = Math.min(150, p.potency||0);
         state.potionEndsAt = Date.now() + (p.durationMs||0);
     }
     

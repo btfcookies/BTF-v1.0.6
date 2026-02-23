@@ -2,9 +2,13 @@ const express = require('express');
 const WebSocket = require('ws');
 const cors = require('cors');
 const http = require('http');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Use environment variable for public tunnel URL
+const TUNNEL_URL = process.env.API_URL || 'https://your-tunnel.trycloudflare.com';
 
 // Middleware
 app.use(cors());
@@ -17,34 +21,39 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 // In-memory storage (replace with database in production)
-const players = new Map(); // playerId -> { id, username, coins, inventory, fruits, ws }
+const players = new Map(); // username -> { username, password_hash, coins, inventory, fruits, ws, online }
 const tradeOffers = new Map(); // tradeId -> { from, to, fromItems, toItems, status, timestamp }
+
+// Password hashing helper (simple SHA256, use bcrypt in production)
+function hashPassword(password) {
+    return crypto.createHash('sha256').update(password).digest('hex');
+}
 
 // Generate unique IDs
 function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
-// Broadcast to specific player
-function sendToPlayer(playerId, message) {
-    const player = players.get(playerId);
+// Broadcast to specific player (by username)
+function sendToPlayer(username, message) {
+    const player = players.get(username);
     if (player && player.ws && player.ws.readyState === WebSocket.OPEN) {
         player.ws.send(JSON.stringify(message));
     }
 }
 
 // Broadcast to all connected players
-function broadcast(message, excludeId = null) {
-    players.forEach((player, id) => {
-        if (id !== excludeId && player.ws && player.ws.readyState === WebSocket.OPEN) {
+function broadcast(message, excludeUsername = null) {
+    players.forEach((player, username) => {
+        if (username !== excludeUsername && player.ws && player.ws.readyState === WebSocket.OPEN) {
             player.ws.send(JSON.stringify(message));
         }
     });
 }
 
 // WebSocket connection handler
-wss.on('connection', (ws) => {
-    let playerId = null;
+wss.on('connection', (ws, req) => {
+    let username = null;
 
     ws.on('message', (data) => {
         try {
@@ -52,39 +61,39 @@ wss.on('connection', (ws) => {
 
             switch (msg.type) {
                 case 'register':
-                    // Register player with their game state
-                    playerId = msg.playerId || generateId();
-                    players.set(playerId, {
-                        id: playerId,
-                        username: msg.username || `Player_${playerId.slice(0, 6)}`,
-                        coins: msg.coins || 0,
-                        inventory: msg.inventory || {},
-                        fruits: msg.fruits || {},
-                        ws: ws,
-                        online: true
-                    });
-                    
+                    // Get username from message or from auth header
+                    username = msg.username;
+                    if (!username || !players.has(username)) {
+                        ws.send(JSON.stringify({
+                            type: 'error',
+                            message: 'Invalid or unregistered username'
+                        }));
+                        break;
+                    }
+
+                    const player = players.get(username);
+                    player.ws = ws;
+                    player.online = true;
+
                     ws.send(JSON.stringify({
                         type: 'registered',
-                        playerId: playerId,
+                        username: username,
                         message: 'Connected to BTF Server'
                     }));
 
-                    // Broadcast player list update
-                    const playerList = Array.from(players.values()).map(p => ({
-                        id: p.id,
-                        username: p.username,
-                        online: p.online
-                    }));
+                    const playerList = Array.from(players.values())
+                        .filter(p => p.online)
+                        .map(p => ({
+                            username: p.username,
+                            online: p.online
+                        }));
                     broadcast({ type: 'playerList', players: playerList });
                     break;
 
                 case 'getPlayers':
-                    // Send list of online players
                     const onlinePlayers = Array.from(players.values())
-                        .filter(p => p.online && p.id !== playerId)
+                        .filter(p => p.online && p.username !== username)
                         .map(p => ({
-                            id: p.id,
                             username: p.username
                         }));
                     ws.send(JSON.stringify({
@@ -94,35 +103,30 @@ wss.on('connection', (ws) => {
                     break;
 
                 case 'proposeTrade':
-                    // Create trade offer
-                    const tradeId = generateId();
-                    const fromPlayer = players.get(playerId);
-                    const toPlayer = players.get(msg.toPlayerId);
+                    const fromPlayer = players.get(username);
+                    const toPlayer = players.get(msg.toUsername);
 
                     if (!fromPlayer || !toPlayer) {
-                        ws.send(JSON.stringify({
-                            type: 'error',
-                            message: 'Player not found'
-                        }));
+                        ws.send(JSON.stringify({ type: 'error', message: 'Player not found' }));
                         break;
                     }
 
+                    const tradeId = generateId();
                     tradeOffers.set(tradeId, {
                         id: tradeId,
-                        from: playerId,
-                        to: msg.toPlayerId,
+                        from: username,
+                        to: msg.toUsername,
                         fromItems: msg.fromItems || { pets: {}, fruits: {}, coins: 0 },
                         toItems: msg.toItems || { pets: {}, fruits: {}, coins: 0 },
                         status: 'pending',
                         timestamp: Date.now()
                     });
 
-                    // Notify both players
-                    sendToPlayer(msg.toPlayerId, {
+                    sendToPlayer(msg.toUsername, {
                         type: 'tradeReceived',
                         trade: {
                             id: tradeId,
-                            from: { id: fromPlayer.id, username: fromPlayer.username },
+                            from: { username: fromPlayer.username },
                             fromItems: msg.fromItems,
                             toItems: msg.toItems
                         }
@@ -135,141 +139,29 @@ wss.on('connection', (ws) => {
                     }));
                     break;
 
-                case 'acceptTrade':
-                    // Accept trade and execute transfer
-                    const trade = tradeOffers.get(msg.tradeId);
-                    if (!trade) {
+                case 'saveState':
+                    if (username && players.has(username)) {
+                        const player = players.get(username);
+                        Object.assign(player, msg.state || {});
                         ws.send(JSON.stringify({
-                            type: 'error',
-                            message: 'Trade not found'
-                        }));
-                        break;
-                    }
-
-                    if (trade.to !== playerId) {
-                        ws.send(JSON.stringify({
-                            type: 'error',
-                            message: 'Not authorized to accept this trade'
-                        }));
-                        break;
-                    }
-
-                    const player1 = players.get(trade.from);
-                    const player2 = players.get(trade.to);
-
-                    if (!player1 || !player2) {
-                        ws.send(JSON.stringify({
-                            type: 'error',
-                            message: 'Player offline'
-                        }));
-                        break;
-                    }
-
-                    // Validate items ownership
-                    let valid = true;
-                    for (const [petId, count] of Object.entries(trade.fromItems.pets || {})) {
-                        if ((player1.inventory[petId] || 0) < count) {
-                            valid = false;
-                            break;
-                        }
-                    }
-                    for (const [fruitId, count] of Object.entries(trade.fromItems.fruits || {})) {
-                        if ((player1.fruits[fruitId] || 0) < count) {
-                            valid = false;
-                            break;
-                        }
-                    }
-                    for (const [petId, count] of Object.entries(trade.toItems.pets || {})) {
-                        if ((player2.inventory[petId] || 0) < count) {
-                            valid = false;
-                            break;
-                        }
-                    }
-                    for (const [fruitId, count] of Object.entries(trade.toItems.fruits || {})) {
-                        if ((player2.fruits[fruitId] || 0) < count) {
-                            valid = false;
-                            break;
-                        }
-                    }
-
-                    if (!valid) {
-                        ws.send(JSON.stringify({
-                            type: 'error',
-                            message: 'Invalid trade: items no longer available'
-                        }));
-                        trade.status = 'failed';
-                        break;
-                    }
-
-                    // Execute trade
-                    // Transfer from player1 to player2
-                    for (const [petId, count] of Object.entries(trade.fromItems.pets || {})) {
-                        player1.inventory[petId] = (player1.inventory[petId] || 0) - count;
-                        if (player1.inventory[petId] <= 0) delete player1.inventory[petId];
-                        player2.inventory[petId] = (player2.inventory[petId] || 0) + count;
-                    }
-                    for (const [fruitId, count] of Object.entries(trade.fromItems.fruits || {})) {
-                        player1.fruits[fruitId] = (player1.fruits[fruitId] || 0) - count;
-                        if (player1.fruits[fruitId] <= 0) delete player1.fruits[fruitId];
-                        player2.fruits[fruitId] = (player2.fruits[fruitId] || 0) + count;
-                    }
-                    player1.coins -= (trade.fromItems.coins || 0);
-                    player2.coins += (trade.fromItems.coins || 0);
-
-                    // Transfer from player2 to player1
-                    for (const [petId, count] of Object.entries(trade.toItems.pets || {})) {
-                        player2.inventory[petId] = (player2.inventory[petId] || 0) - count;
-                        if (player2.inventory[petId] <= 0) delete player2.inventory[petId];
-                        player1.inventory[petId] = (player1.inventory[petId] || 0) + count;
-                    }
-                    for (const [fruitId, count] of Object.entries(trade.toItems.fruits || {})) {
-                        player2.fruits[fruitId] = (player2.fruits[fruitId] || 0) - count;
-                        if (player2.fruits[fruitId] <= 0) delete player2.fruits[fruitId];
-                        player1.fruits[fruitId] = (player1.fruits[fruitId] || 0) + count;
-                    }
-                    player2.coins -= (trade.toItems.coins || 0);
-                    player1.coins += (trade.toItems.coins || 0);
-
-                    trade.status = 'completed';
-
-                    // Notify both players
-                    sendToPlayer(player1.id, {
-                        type: 'tradeCompleted',
-                        trade: {
-                            id: trade.id,
-                            newInventory: player1.inventory,
-                            newFruits: player1.fruits,
-                            newCoins: player1.coins
-                        }
-                    });
-                    sendToPlayer(player2.id, {
-                        type: 'tradeCompleted',
-                        trade: {
-                            id: trade.id,
-                            newInventory: player2.inventory,
-                            newFruits: player2.fruits,
-                            newCoins: player2.coins
-                        }
-                    });
-                    break;
-
-                case 'declineTrade':
-                    const declinedTrade = tradeOffers.get(msg.tradeId);
-                    if (declinedTrade) {
-                        declinedTrade.status = 'declined';
-                        sendToPlayer(declinedTrade.from, {
-                            type: 'tradeDeclined',
-                            tradeId: msg.tradeId
-                        });
-                        ws.send(JSON.stringify({
-                            type: 'tradeDeclined',
-                            tradeId: msg.tradeId
+                            type: 'stateSaved',
+                            success: true
                         }));
                     }
                     break;
 
-                case 'ping':
-                    ws.send(JSON.stringify({ type: 'pong' }));
+                case 'loadState':
+                    if (username && players.has(username)) {
+                        const player = players.get(username);
+                        ws.send(JSON.stringify({
+                            type: 'stateLoaded',
+                            state: {
+                                coins: player.coins || 0,
+                                inventory: player.inventory || {},
+                                fruits: player.fruits || {}
+                            }
+                        }));
+                    }
                     break;
             }
         } catch (error) {
@@ -282,12 +174,9 @@ wss.on('connection', (ws) => {
     });
 
     ws.on('close', () => {
-        if (playerId && players.has(playerId)) {
-            players.get(playerId).online = false;
-            broadcast({
-                type: 'playerOffline',
-                playerId: playerId
-            });
+        if (username && players.has(username)) {
+            players.get(username).online = false;
+            broadcast({ type: 'playerOffline', username: username });
         }
     });
 
@@ -297,6 +186,55 @@ wss.on('connection', (ws) => {
 });
 
 // REST API endpoints
+
+app.get('/', (req, res) => res.send('BTF backend is running!'));
+
+// Authentication endpoint
+app.post('/api/auth/login', (req, res) => {
+    const { username, password } = req.body;
+
+    // Validation
+    if (!username || !password) {
+        return res.json({ success: false, message: 'Username and password are required.' });
+    }
+
+    if (username.length < 3) {
+        return res.json({ success: false, message: 'Username must be at least 3 characters.' });
+    }
+
+    if (password.length < 4) {
+        return res.json({ success: false, message: 'Password must be at least 4 characters.' });
+    }
+
+    const passwordHash = hashPassword(password);
+
+    // Check if user exists
+    if (players.has(username)) {
+        const player = players.get(username);
+        // Verify password
+        if (player.password_hash === passwordHash) {
+            res.json({ success: true, message: 'Logged in successfully!' });
+        } else {
+            res.json({ success: false, message: 'Incorrect password.' });
+        }
+    } else {
+        // Create new account
+        players.set(username, {
+            username: username,
+            password_hash: passwordHash,
+            coins: 2000,
+            enchantPoints: 0,
+            inventory: {},
+            fruits: {},
+            petEnchantments: {},
+            petNames: {},
+            ws: null,
+            online: false
+        });
+        res.json({ success: true, message: 'Account created successfully!' });
+    }
+});
+
 app.get('/api/status', (req, res) => {
     res.json({
         status: 'online',
@@ -307,24 +245,21 @@ app.get('/api/status', (req, res) => {
 });
 
 app.get('/api/players', (req, res) => {
-    const playerList = Array.from(players.values()).map(p => ({
-        id: p.id,
-        username: p.username,
-        online: p.online
-    }));
+    const playerList = Array.from(players.values())
+        .filter(p => p.online)
+        .map(p => ({
+            username: p.username,
+            online: p.online
+        }));
     res.json({ players: playerList });
 });
 
-// Health check
-app.get('/health', (req, res) => {
-    res.json({ status: 'OK' });
-});
-
+app.get('/health', (req, res) => res.json({ status: 'OK' }));
 // Start server
-server.listen(PORT, () => {
-    console.log(`🎮 BTF Trading Server running on port ${PORT}`);
-    console.log(`   WebSocket: ws://localhost:${PORT}`);
-    console.log(`   HTTP API: http://localhost:${PORT}`);
+server.listen(PORT, () => { 
+    console.log(` BTF Server running on port ${PORT}`);
+    console.log(`   WebSocket: wss://${TUNNEL_URL.replace(/^https?:\/\//, '')}`);
+    console.log(`   HTTP API: ${TUNNEL_URL}`);
 });
 
 // Cleanup old trades every 5 minutes
@@ -336,4 +271,4 @@ setInterval(() => {
             tradeOffers.delete(id);
         }
     });
-}, 5 * 60 * 1000);
+}, fiveMinutes);

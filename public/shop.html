@@ -113,7 +113,7 @@
                             <h3 style="font-size:24px;background:linear-gradient(135deg, #FFD700, #FFA500);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:0;">BTF+</h3>
                             <p style="color:#FFD700;font-weight:600;margin:4px 0;">The Best Deal in BTF!</p>
                         </div>
-                        <button class="buy-btn" disabled style="background:linear-gradient(135deg, #FFD700, #FFA500);color:#000;font-weight:700;padding:10px 20px;border-radius:8px;">Coming Soon</button>
+                        <button id="claimBTFPlus" class="buy-btn" style="background:linear-gradient(135deg, #FFD700, #FFA500);color:#000;font-weight:700;padding:10px 20px;border-radius:8px;cursor:pointer;pointer-events:auto;">Claim</button>
                     </div>
                     <div style="background:rgba(0,0,0,0.3);border-radius:10px;padding:14px;margin-bottom:12px;">
                         <p style="margin:0;color:#FFD700;font-weight:600;font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">What's Included:</p>
@@ -335,10 +335,19 @@
                     <button id="redeemGiftCode" class="buy-btn">Redeem</button>
                 </section>
 
-
+                
                 
             </section>
 
+            <div class="claim-popup">
+                <div class="claim-popup-content">
+                    <label for="order-number">Your Order Number:</label>
+                    <input type="text" id="order-number" placeholder="Enter order number" maxlength="16" style="margin-top:8px;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:var(--card);color:var(--fg);font-size:14px;width:220px;font-family:inherit;" />
+
+                    <button id="claim-order-btn" class="buy-btn" style="margin-top:12px;">Claim Purchase</button>
+                    <button class="buy-btn" id="close-claim-popup" style="margin-top:8px;background:var(--muted);">Close</button>
+                </div>
+            </div>
             
         </main>
 
@@ -347,5 +356,7 @@
         </footer>
     </div>
     <script src="bundle.js"></script>
+
+    
 </body>
 </html>
